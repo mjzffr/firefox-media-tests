@@ -24,7 +24,7 @@ class TestVideoPlayback(FirefoxTestCase):
     def tearDown(self):
         FirefoxTestCase.tearDown(self)
 
-    def test_access_locationbar_history(self):
+    def test_video_visit(self):
         # Open all the videos one after the other in current tab
         def load_urls():
             with self.marionette.using_context('content'):
@@ -32,3 +32,4 @@ class TestVideoPlayback(FirefoxTestCase):
                     self.marionette.navigate(url)
                     sleep(4)
         self.places.wait_for_visited(self.test_urls, load_urls)
+        # TODO
