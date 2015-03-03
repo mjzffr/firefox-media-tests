@@ -8,3 +8,6 @@ gecko.log
 
 #other
 *.ignore
+
+#pycharm
+.idea/
