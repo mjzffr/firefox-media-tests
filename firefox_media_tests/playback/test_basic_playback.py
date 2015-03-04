@@ -31,6 +31,7 @@ class TestVideoPlayback(FirefoxTestCase):
                 timeout = (int(youtube.player_duration) +
                            30 * (youtube.breaks_count + 1))
                 wait = Wait(youtube, timeout=timeout)
+                # TODO put this in a method like wait_with_more_data(wait, obj)
                 try:
                     wait.until(lambda yt: yt.player_ended)
                 except errors.TimeoutException as e:

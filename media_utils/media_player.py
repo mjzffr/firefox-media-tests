@@ -26,7 +26,7 @@ class YouTubePuppeteer:
     def __init__(self, marionette, url):
         self.marionette = marionette
         self.url = url
-        wait = Wait(self.marionette)
+        wait = Wait(self.marionette, timeout=30)
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.url)
             wait.until(expected.element_displayed(By.ID, 'movie_player'))
