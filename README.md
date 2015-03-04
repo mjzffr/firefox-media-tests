@@ -19,7 +19,7 @@ Setup
 
    ```sh
    $ virtualenv foo
-   $ source foo/bin/activate
+   $ source foo/bin/activate #or `foo\Scripts\activate` on Windows
    ```
 
 There are two `setup.py` files: one in `$PROJECT_HOME`, another 
