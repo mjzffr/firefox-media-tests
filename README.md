@@ -44,7 +44,7 @@ Now `firefox-media-tests` should be a recognized command. Try `firefox-media-tes
 
 Running the Tests
 -----------------
-In the examples below, `$FF_PATH` with a path to a Firefox binary. _(Note - Feb 25, 2015: currently, these instructions only work for [Firefox Nightly][ff-nightly].)_
+In the examples below, `$FF_PATH` with a path to a Firefox binary. _(Note - Mar 1, 2015: currently, these instructions only work for [Firefox Nightly][ff-nightly] 39 and Aurora 38. This depends on gecko-marionette version compatibility.)_
 
 This runs all the tests listed in `$PROJECT_HOME/firefox_media_tests/manifest.ini`:
 
