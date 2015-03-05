@@ -37,6 +37,17 @@ class YouTubePuppeteer:
             self.video = self.marionette.find_element(By.CSS_SELECTOR,
                                                       '#movie_player video')
 
+    def skip_ad(self):
+        if self.ad_skippable:
+            selector = '#movie_player .videoAdUiSkipContainer'
+            wait = Wait(self.marionette, timeout=30)
+            with self.marionette.using_context('content'):
+                wait.until(expected.element_displayed(By.CSS_SELECTOR,
+                                                      selector))
+                ad_button = self.marionette.find_element(By.CSS_SELECTOR,
+                                                         selector)
+                ad_button.click()
+
     @property
     def player_duration(self):
         """ Returns duration in seconds. """
@@ -111,17 +122,30 @@ class YouTubePuppeteer:
 
         :return: integer representing ad format, or False
         """
-        with self.marionette.using_context('content'):
-            state = self.execute_yt_script('return arguments[0].'
-                                           'wrappedJSObject.'
-                                           'getOption("ad", "displaystate").'
-                                           'adFormat;')
+        state = self.get_ad_displaystate()
         if state:
             return self.marionette.execute_script('return arguments[0].'
                                                   'adFormat;',
                                                   script_args=[state])
         else:
             return False
+
+    @property
+    def ad_skippable(self):
+        state = self.get_ad_displaystate()
+        if state:
+            return self.marionette.execute_script('return arguments[0].'
+                                                  'skippable;',
+                                                  script_args=[state])
+        else:
+            return False
+
+    def get_ad_displaystate(self):
+        # may return None
+        with self.marionette.using_context('content'):
+            return self.execute_yt_script('return arguments[0].'
+                                           'wrappedJSObject.'
+                                           'getOption("ad", "displaystate");')
 
     @property
     def breaks_count(self):
@@ -137,7 +161,7 @@ class YouTubePuppeteer:
     @property
     def ad_inactive(self):
         # TODO This might not detect ads that play in the middle of a video
-        # current_time stands still while add is playing
+        # current_time stands still while ad is playing
         if self.player_current_time > 0 or self.player_playing:
             return True
         else:

@@ -24,14 +24,16 @@ class TestVideoPlayback(FirefoxTestCase):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
-                # TODO try to click through to non-ad?
                 # TODO this only handles ad playing at start
+                # skip ad (if possible) or wait until ad completes playback
+                youtube.skip_ad()
                 Wait(youtube, timeout=360).until(lambda yt: yt.ad_inactive)
-                # TODO better way to deal with buffering delays?
+                # TODO find better way to deal with buffering delays?
                 timeout = (int(youtube.player_duration) +
                            30 * (youtube.breaks_count + 1))
                 wait = Wait(youtube, timeout=timeout)
                 # TODO put this in a method like wait_with_more_data(wait, obj)
+                # for better error reporting
                 try:
                     wait.until(lambda yt: yt.player_ended)
                 except errors.TimeoutException as e:
