@@ -210,5 +210,6 @@ class YouTubePuppeteer:
                     '\tad_state: {0},'.format(ad_state),
                     '\tplayback_quality: {0},'.format(self.playback_quality),
                     '\tvideo_id: {0}'.format(self.video_id),
+                    '\tvideo.src: {0}'.format(self.video_src),
                     '}']
         return '\n'.join(messages)
