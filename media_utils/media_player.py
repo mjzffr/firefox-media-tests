@@ -69,18 +69,37 @@ class YouTubePuppeteer:
         return state
 
     def _get_player_debug_dict(self):
+        # may return None
         with self.marionette.using_context('content'):
             text = self.execute_yt_script('return arguments[0].'
                                           'wrappedJSObject.getDebugText();')
-        return eval(text)
+        if text:
+            return eval(text)
+        else:
+            return None
 
     @property
     def playback_quality(self):
-        return self._get_player_debug_dict()['debug_playbackQuality']
+        # may return None
+        debug_dict = self._get_player_debug_dict()
+        if debug_dict:
+            return debug_dict['debug_playbackQuality']
+        else:
+            return None
 
     @property
     def video_id(self):
-        return self._get_player_debug_dict()['debug_videoId']
+        # may return None
+        debug_dict = self._get_player_debug_dict()
+        if debug_dict:
+            return debug_dict['debug_videoId']
+        else:
+            return None
+
+    @property
+    def video_src(self):
+        with self.marionette.using_context('content'):
+            return self.video.get_attribute('src')
 
     @property
     def player_state(self):
