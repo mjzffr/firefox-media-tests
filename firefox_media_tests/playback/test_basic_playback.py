@@ -2,12 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from sys import exc_info
-
 from firefox_ui_harness.testcase import FirefoxTestCase
-from marionette import errors, Wait
+from marionette import Wait
 
 from firefox_media_tests import videos
+from firefox_media_tests.utils import verbose_until
 from media_utils.media_player import YouTubePuppeteer
 
 
@@ -24,22 +23,17 @@ class TestVideoPlayback(FirefoxTestCase):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
-                # TODO this only handles ad playing at start
-                # skip ad (if possible) or wait until ad completes playback
-                youtube.skip_ad()
-                Wait(youtube, timeout=360).until(lambda yt: yt.ad_inactive)
-                # TODO find better way to deal with buffering delays?
+                # skip first ad if possible or wait until ad completes playback
+                youtube.attempt_ad_skip()
+                verbose_until(Wait(youtube, timeout=360), youtube,
+                              lambda yt: yt.ad_inactive)
+
+                # TODO find way to deal with buffering delays
+                # add 60s extra timeout room per expected ad break
                 timeout = (int(youtube.player_duration) +
-                           30 * (youtube.breaks_count + 1))
-                wait = Wait(youtube, timeout=timeout)
-                # TODO put this in a method like wait_with_more_data(wait, obj)
-                # for better error reporting
-                try:
-                    wait.until(lambda yt: yt.player_ended)
-                except errors.TimeoutException as e:
-                    message = '\n'.join([e.msg, str(youtube)])
-                    raise errors.TimeoutException(message=message,
-                                                  cause=exc_info())
+                           60 * (youtube.breaks_count + 1))
+                verbose_until(Wait(youtube, timeout=timeout), youtube,
+                              lambda yt: yt.player_ended)
 
     def test_playback_starts(self):
         def playback_ok(yt):
@@ -50,7 +44,8 @@ class TestVideoPlayback(FirefoxTestCase):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
-                Wait(youtube, interval=5, timeout=30).until(playback_ok)
+                # TODO getting timeout on nightly sometimes.
+                verbose_until(Wait(youtube, timeout=30), youtube, playback_ok)
 
     def test_videos_playing_in_many_tabs(self):
         pass

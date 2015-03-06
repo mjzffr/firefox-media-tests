@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from time import sleep
 from marionette import By, expected, Wait
 
 
@@ -37,7 +38,11 @@ class YouTubePuppeteer:
             self.video = self.marionette.find_element(By.CSS_SELECTOR,
                                                       '#movie_player video')
 
-    def skip_ad(self):
+    def attempt_ad_skip(self):
+        # Wait for ad to load and become skippable
+        if (self.ad_state == self._yt_player_state['PLAYING'] or
+                self.get_player_progress() == 0):
+            sleep(10)
         if self.ad_skippable:
             selector = '#movie_player .videoAdUiSkipContainer'
             wait = Wait(self.marionette, timeout=30)
@@ -144,13 +149,13 @@ class YouTubePuppeteer:
         # may return None
         with self.marionette.using_context('content'):
             return self.execute_yt_script('return arguments[0].'
-                                           'wrappedJSObject.'
-                                           'getOption("ad", "displaystate");')
+                                          'wrappedJSObject.'
+                                          'getOption("ad", "displaystate");')
 
     @property
     def breaks_count(self):
         """
-        :return: integer that represents number of upcoming ad breaks (?)
+        :return: integer that represents number of upcoming ad breaks
         """
         with self.marionette.using_context('content'):
             breaks = self.execute_yt_script('return arguments[0].'
@@ -160,12 +165,16 @@ class YouTubePuppeteer:
 
     @property
     def ad_inactive(self):
-        # TODO This might not detect ads that play in the middle of a video
-        # current_time stands still while ad is playing
+        # `current_time` stands still while ad is playing
         if self.player_current_time > 0 or self.player_playing:
-            return True
+            return self.get_player_progress() > 0
         else:
             return self.ad_state == self._yt_player_state['ENDED']
+
+    def get_player_progress(self):
+        initial = self.player_current_time
+        sleep(1)
+        return self.player_current_time - initial
 
     def execute_yt_script(self, script):
         return self.marionette.execute_script(script,
