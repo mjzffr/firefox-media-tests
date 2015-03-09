@@ -4,7 +4,7 @@
 
 from sys import exc_info
 
-from marionette import errors
+from marionette_driver.errors import TimeoutException
 
 
 def verbose_until(wait, target, condition):
@@ -24,6 +24,6 @@ def verbose_until(wait, target, condition):
     """
     try:
         return wait.until(condition)
-    except errors.TimeoutException as e:
+    except TimeoutException as e:
         message = '\n'.join([e.msg, str(target)])
-        raise errors.TimeoutException(message=message, cause=exc_info())
+        raise TimeoutException(message=message, cause=exc_info())

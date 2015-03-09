@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from firefox_ui_harness.testcase import FirefoxTestCase
-from marionette import Wait
+from marionette_driver import Wait
 
 from firefox_media_tests import videos
 from firefox_media_tests.utils import verbose_until
