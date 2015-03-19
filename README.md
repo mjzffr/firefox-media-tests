@@ -55,16 +55,25 @@ This runs all the tests listed in `$PROJECT_HOME/firefox_media_tests/manifest.in
 You can also run all the tests at a particular path:
 
    ```sh
-   $ firefox-ui-tests --binary $FF_PATH some/path/foo
+   $ firefox-media-tests --binary $FF_PATH some/path/foo
    ```
 
 Or you can run the tests that are listed in a manifest file of your choice.
 
    ```sh
-   $ firefox-ui-tests --binary $FF_PATH some/other/path/manifest.ini
+   $ firefox-media-tests --binary $FF_PATH some/other/path/manifest.ini
+   ```
+
+By default, the urls listed in `firefox_media_tests/video_data.ini` are used for the tests, but you can also supply your own ini file of urls:
+   
+   ```sh
+   $ firefox-media-tests --binary $FF_PATH --urls some/other/path/my_urls.ini
    ```
 
 `firefox-media-tests` works very much like `firefox-ui-tests`, so see [usage for firefox-ui-tests](https://github.com/mjzffr/firefox-ui-tests#usage)
+
+### A warning about video URLs
+`video_data.ini`, `other_videos.ini` and `crash_videos.ini` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. I do not intend to ever verify or filter these URLs.
 
 Writing a test
 --------------

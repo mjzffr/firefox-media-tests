@@ -5,11 +5,16 @@
 import os
 from manifestparser import read_ini
 
+
+def get_videos(video_manifest):
+    with open(video_manifest, 'r'):
+        return [line[0] for line in read_ini(video_manifest)]
+
 root = os.path.abspath(os.path.dirname(__file__))
 manifest = os.path.join(root, 'manifest.ini')
 resources = os.path.join(root, 'resources')
 
-# Sets of videos
-video_manifest = os.path.join(root, 'video_data.ini')
-with open(video_manifest, 'r'):
-    videos = [line[0] for line in read_ini(video_manifest)]
+
+# default set of videos
+# (overwritten if --urls option is used)
+videos = get_videos(os.path.join(root, 'video_data.ini'))
