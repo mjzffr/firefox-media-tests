@@ -3,7 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from time import sleep
+from re import compile
+
 from marionette_driver import By, expected, Wait
+from marionette_driver.errors import TimeoutException
 
 
 class YouTubePuppeteer:
@@ -24,6 +27,8 @@ class YouTubePuppeteer:
 
     _yt_player_state_name = {v: k for k, v in _yt_player_state.items()}
 
+    _time_pattern = compile('(?P<minute>\d+):(?P<second>\d+)')
+
     def __init__(self, marionette, url):
         self.marionette = marionette
         self.url = url
@@ -39,6 +44,10 @@ class YouTubePuppeteer:
                                                       '#movie_player video')
 
     def attempt_ad_skip(self):
+        """
+        Attempts to skip ad by clicking on skip-add button.
+        Returns True if clicking of ad-skip button occurred.
+        """
         # Wait for ad to load and become skippable
         if (self.ad_state == self._yt_player_state['PLAYING'] or
                 self.get_player_progress() == 0):
@@ -52,6 +61,34 @@ class YouTubePuppeteer:
                 ad_button = self.marionette.find_element(By.CSS_SELECTOR,
                                                          selector)
                 ad_button.click()
+                return True
+        else:
+            return False
+
+    def search_ad_duration(self):
+        """
+        :return: ad duration in seconds, if currently displayed in player
+        """
+        if not (self.ad_state == self._yt_player_state['PLAYING'] or
+                self.get_player_progress() == 0):
+            return None
+        selector = '#movie_player .videoAdUiAttribution'
+        wait = Wait(self.marionette, timeout=5)
+        try:
+            with self.marionette.using_context('content'):
+                wait.until(expected.element_present(By.CSS_SELECTOR,
+                                                    selector))
+                countdown = self.marionette.find_element(By.CSS_SELECTOR,
+                                                         selector)
+                ad_time = self._time_pattern.search(countdown.text)
+                if ad_time:
+                    ad_minutes = int(ad_time.group('minute'))
+                    ad_seconds = int(ad_time.group('second'))
+                    return 60 * ad_minutes + ad_seconds
+                else:
+                    return None
+        except TimeoutException:
+            return None
 
     @property
     def player_duration(self):
@@ -97,6 +134,13 @@ class YouTubePuppeteer:
             return None
 
     @property
+    def video_url(self):
+        with self.marionette.using_context('content'):
+            url = self.execute_yt_script('return arguments[0].'
+                                         'wrappedJSObject.getVideoUrl();')
+        return url
+
+    @property
     def video_src(self):
         with self.marionette.using_context('content'):
             return self.video.get_attribute('src')
@@ -134,6 +178,7 @@ class YouTubePuppeteer:
 
     @property
     def ad_state(self):
+        # Note: ad_state is sometimes not accurate, due to some sort of lag?
         with self.marionette.using_context('content'):
             state = self.execute_yt_script('return arguments[0].'
                                            'wrappedJSObject.getAdState();')
@@ -174,19 +219,21 @@ class YouTubePuppeteer:
     @property
     def breaks_count(self):
         """
-        :return: integer that represents number of upcoming ad breaks
+        Number of upcoming ad breaks.
         """
         with self.marionette.using_context('content'):
             breaks = self.execute_yt_script('return arguments[0].'
                                             'wrappedJSObject.'
                                             'getOption("ad", "breakscount")')
+        # if video is not associated with any ads, breaks will be null
         return breaks or 0
 
     @property
     def ad_inactive(self):
         # `current_time` stands still while ad is playing
         if self.player_current_time > 0 or self.player_playing:
-            return self.get_player_progress() > 0
+            return (self.get_player_progress() > 0 or
+                    self.ad_state == self._yt_player_state['ENDED'])
         else:
             return self.ad_state == self._yt_player_state['ENDED']
 
@@ -209,7 +256,7 @@ class YouTubePuppeteer:
                     '\tcurrent_state: {0},'.format(player_state),
                     '\tad_state: {0},'.format(ad_state),
                     '\tplayback_quality: {0},'.format(self.playback_quality),
-                    '\tvideo_id: {0}'.format(self.video_id),
+                    '\tvideo_url: {0},'.format(self.video_url),
                     '\tvideo.src: {0}'.format(self.video_src),
                     '}']
         return '\n'.join(messages)
