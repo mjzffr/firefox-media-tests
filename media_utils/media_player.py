@@ -236,6 +236,26 @@ class YouTubePuppeteer:
         sleep(1)
         return self.player_current_time - initial
 
+    def deactivate_autoplay(self):
+        """
+        Attempts to turn off autoplay. Returns True if unsuccessful.
+        """
+        element_id = 'autoplay-checkbox'
+        mn = self.marionette
+        success = False
+        with mn.using_context('content'):
+            if expected.element_displayed(By.ID, element_id):
+                checkbox = mn.find_element(By.ID, element_id)
+                checked = mn.execute_script('return arguments[0].'
+                                            'wrappedJSObject.checked',
+                                            script_args=[checkbox])
+                if checked:
+                    mn.execute_script('return arguments[0].'
+                                      'wrappedJSObject.click()',
+                                      script_args=[checkbox])
+                    success = True
+        return success
+
     def execute_yt_script(self, script):
         with self.marionette.using_context('content'):
             return self.marionette.execute_script(script,

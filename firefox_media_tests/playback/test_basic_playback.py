@@ -24,6 +24,7 @@ class TestVideoPlayback(FirefoxTestCase):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
+                youtube.deactivate_autoplay()
                 wait_for_ads(youtube)
                 verbose_until(Wait(youtube,
                                    timeout=youtube.player_duration * 1.3),
