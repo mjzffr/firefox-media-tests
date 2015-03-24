@@ -6,7 +6,7 @@ from time import sleep
 from re import compile
 
 from marionette_driver import By, expected, Wait
-from marionette_driver.errors import TimeoutException
+from marionette_driver.errors import TimeoutException, NoSuchElementException
 
 
 class YouTubePuppeteer:
@@ -244,16 +244,21 @@ class YouTubePuppeteer:
         mn = self.marionette
         success = False
         with mn.using_context('content'):
+            # fixme: this display condition seems to always return true, even
+            # if find_element throws NoSuchElement... (?)
             if expected.element_displayed(By.ID, element_id):
-                checkbox = mn.find_element(By.ID, element_id)
-                checked = mn.execute_script('return arguments[0].'
-                                            'wrappedJSObject.checked',
-                                            script_args=[checkbox])
-                if checked:
-                    mn.execute_script('return arguments[0].'
-                                      'wrappedJSObject.click()',
-                                      script_args=[checkbox])
-                    success = True
+                try:
+                    checkbox = mn.find_element(By.ID, element_id)
+                    checked = mn.execute_script('return arguments[0].'
+                                                'wrappedJSObject.checked',
+                                                script_args=[checkbox])
+                    if checked:
+                        mn.execute_script('return arguments[0].'
+                                          'wrappedJSObject.click()',
+                                          script_args=[checkbox])
+                        success = True
+                except NoSuchElementException:
+                    return False
         return success
 
     def execute_yt_script(self, script):
