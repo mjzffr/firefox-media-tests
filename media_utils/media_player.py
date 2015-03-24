@@ -93,23 +93,20 @@ class YouTubePuppeteer:
     @property
     def player_duration(self):
         """ Returns duration in seconds. """
-        with self.marionette.using_context('content'):
-            duration = self.execute_yt_script('return arguments[0].'
-                                              'wrappedJSObject.getDuration();')
+        duration = self.execute_yt_script('return arguments[0].'
+                                          'wrappedJSObject.getDuration();')
         return duration
 
     @property
     def player_current_time(self):
-        with self.marionette.using_context('content'):
-            state = self.execute_yt_script('return arguments[0].'
-                                           'wrappedJSObject.getCurrentTime();')
+        state = self.execute_yt_script('return arguments[0].'
+                                       'wrappedJSObject.getCurrentTime();')
         return state
 
     def _get_player_debug_dict(self):
         # may return None
-        with self.marionette.using_context('content'):
-            text = self.execute_yt_script('return arguments[0].'
-                                          'wrappedJSObject.getDebugText();')
+        text = self.execute_yt_script('return arguments[0].'
+                                      'wrappedJSObject.getDebugText();')
         if text:
             return eval(text)
         else:
@@ -135,9 +132,8 @@ class YouTubePuppeteer:
 
     @property
     def video_url(self):
-        with self.marionette.using_context('content'):
-            url = self.execute_yt_script('return arguments[0].'
-                                         'wrappedJSObject.getVideoUrl();')
+        url = self.execute_yt_script('return arguments[0].'
+                                     'wrappedJSObject.getVideoUrl();')
         return url
 
     @property
@@ -147,9 +143,8 @@ class YouTubePuppeteer:
 
     @property
     def player_state(self):
-        with self.marionette.using_context('content'):
-            state = self.execute_yt_script('return arguments[0].'
-                                           'wrappedJSObject.getPlayerState();')
+        state = self.execute_yt_script('return arguments[0].'
+                                       'wrappedJSObject.getPlayerState();')
         return state
 
     @property
@@ -179,9 +174,8 @@ class YouTubePuppeteer:
     @property
     def ad_state(self):
         # Note: ad_state is sometimes not accurate, due to some sort of lag?
-        with self.marionette.using_context('content'):
-            state = self.execute_yt_script('return arguments[0].'
-                                           'wrappedJSObject.getAdState();')
+        state = self.execute_yt_script('return arguments[0].'
+                                       'wrappedJSObject.getAdState();')
         return state
 
     @property
@@ -193,9 +187,10 @@ class YouTubePuppeteer:
         """
         state = self.get_ad_displaystate()
         if state:
-            return self.marionette.execute_script('return arguments[0].'
-                                                  'adFormat;',
-                                                  script_args=[state])
+            with self.marionette.using_context('content'):
+                return self.marionette.execute_script('return arguments[0].'
+                                                      'adFormat;',
+                                                      script_args=[state])
         else:
             return False
 
@@ -203,28 +198,27 @@ class YouTubePuppeteer:
     def ad_skippable(self):
         state = self.get_ad_displaystate()
         if state:
-            return self.marionette.execute_script('return arguments[0].'
-                                                  'skippable;',
-                                                  script_args=[state])
+            with self.marionette.using_context('content'):
+                return self.marionette.execute_script('return arguments[0].'
+                                                      'skippable;',
+                                                      script_args=[state])
         else:
             return False
 
     def get_ad_displaystate(self):
         # may return None
-        with self.marionette.using_context('content'):
-            return self.execute_yt_script('return arguments[0].'
-                                          'wrappedJSObject.'
-                                          'getOption("ad", "displaystate");')
+        return self.execute_yt_script('return arguments[0].'
+                                      'wrappedJSObject.'
+                                      'getOption("ad", "displaystate");')
 
     @property
     def breaks_count(self):
         """
         Number of upcoming ad breaks.
         """
-        with self.marionette.using_context('content'):
-            breaks = self.execute_yt_script('return arguments[0].'
-                                            'wrappedJSObject.'
-                                            'getOption("ad", "breakscount")')
+        breaks = self.execute_yt_script('return arguments[0].'
+                                        'wrappedJSObject.'
+                                        'getOption("ad", "breakscount")')
         # if video is not associated with any ads, breaks will be null
         return breaks or 0
 
@@ -243,9 +237,10 @@ class YouTubePuppeteer:
         return self.player_current_time - initial
 
     def execute_yt_script(self, script):
-        return self.marionette.execute_script(script,
-                                              script_args=[self.player,
-                                                           self.video])
+        with self.marionette.using_context('content'):
+            return self.marionette.execute_script(script,
+                                                  script_args=[self.player,
+                                                               self.video])
 
     def __str__(self):
         player_state = self._yt_player_state_name[self.player_state]
