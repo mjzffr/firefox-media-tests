@@ -236,6 +236,21 @@ class YouTubePuppeteer:
         sleep(1)
         return self.player_current_time - initial
 
+    @property
+    def player_stalled(self):
+        # `current_time` stands still while ad is playing
+        def condition():
+            return (self.get_player_progress() < 0.1 and
+                    self.ad_state != self._yt_player_state['PLAYING'] and
+                    not self.player_paused)
+        if condition():
+            sleep(2)
+            # try again to be sure
+            return condition()
+        else:
+            return False
+
+
     def deactivate_autoplay(self):
         """
         Attempt to turn off autoplay. Return True if successful.
