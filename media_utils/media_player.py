@@ -238,28 +238,35 @@ class YouTubePuppeteer:
 
     def deactivate_autoplay(self):
         """
-        Attempts to turn off autoplay. Returns True if unsuccessful.
+        Attempt to turn off autoplay. Return True if successful.
         """
         element_id = 'autoplay-checkbox'
         mn = self.marionette
-        success = False
-        with mn.using_context('content'):
-            # fixme: this display condition seems to always return true, even
-            # if find_element throws NoSuchElement... (?)
-            if expected.element_displayed(By.ID, element_id):
-                try:
-                    checkbox = mn.find_element(By.ID, element_id)
-                    checked = mn.execute_script('return arguments[0].'
-                                                'wrappedJSObject.checked',
-                                                script_args=[checkbox])
-                    if checked:
-                        mn.execute_script('return arguments[0].'
-                                          'wrappedJSObject.click()',
-                                          script_args=[checkbox])
-                        success = True
-                except NoSuchElementException:
-                    return False
-        return success
+        wait = Wait(mn, timeout=10)
+
+        def get_status(el):
+            script = 'return arguments[0].wrappedJSObject.checked'
+            return mn.execute_script(script, script_args=[el])
+
+        try:
+            with mn.using_context('content'):
+                # the width and height of the element are 0, so it's not visible
+                wait.until(expected.element_present(By.ID, element_id))
+                checkbox = mn.find_element(By.ID, element_id)
+
+                # Note: in some videos, due to late-loading of sidebar ads, the
+                # button is rerendered after sidebar ads appear and the autoplay
+                # pref resets to "on". In other words, if you click too early,
+                # the pref might get reset moments later.
+                sleep(1)
+                if get_status(checkbox):
+                    mn.execute_script('return arguments[0].'
+                                      'wrappedJSObject.click()',
+                                      script_args=[checkbox])
+                autoplay = get_status(checkbox)
+                return (autoplay is not None) and (not autoplay)
+        except (NoSuchElementException, TimeoutException):
+            return False
 
     def execute_yt_script(self, script):
         with self.marionette.using_context('content'):
