@@ -45,8 +45,8 @@ class YouTubePuppeteer:
 
     def attempt_ad_skip(self):
         """
-        Attempts to skip ad by clicking on skip-add button.
-        Returns True if clicking of ad-skip button occurred.
+        Attempt to skip ad by clicking on skip-add button.
+        Return True if clicking of ad-skip button occurred.
         """
         # Wait for ad to load and become skippable
         if (self.ad_state == self._yt_player_state['PLAYING'] or
@@ -90,9 +90,15 @@ class YouTubePuppeteer:
         except TimeoutException:
             return None
 
+    def player_play(self):
+        self.execute_yt_script('arguments[0].wrappedJSObject.playVideo()')
+
+    def player_pause(self):
+        self.execute_yt_script('arguments[0].wrappedJSObject.pauseVideo()')
+
     @property
     def player_duration(self):
-        """ Returns duration in seconds. """
+        """ Return duration in seconds. """
         duration = self.execute_yt_script('return arguments[0].'
                                           'wrappedJSObject.getDuration();')
         return duration
@@ -102,6 +108,10 @@ class YouTubePuppeteer:
         state = self.execute_yt_script('return arguments[0].'
                                        'wrappedJSObject.getCurrentTime();')
         return state
+
+    @property
+    def player_remaining_time(self):
+        return self.player_duration - self.player_current_time
 
     def _get_player_debug_dict(self):
         # may return None
