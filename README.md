@@ -72,12 +72,71 @@ By default, the urls listed in `firefox_media_tests/video_data.ini` are used for
 
 `firefox-media-tests` works very much like `firefox-ui-tests`, so see [usage for firefox-ui-tests](https://github.com/mjzffr/firefox-ui-tests#usage)
 
+### Running tests in a way that provides information about a crash
+
+What if Firefox crashes during a test run? You want to know why! To report useful crash data, the test runner needs access to a "minidump_stackwalk" binary and a "symbols.zip" file.
+
+1. Download `minidump_stackwalk` binary (save it whereever). Get it from https://hg.mozilla.org (under `build/tools/breakpad/[your platform]/minidump_stackwalk`).
+2. Make `minidump_stackwalk` executable
+
+   ```sh
+   $ chmod +x path/to/minidump_stackwalk
+   ```
+
+3. Create an environment variable called `MINIDUMP_STACKWALK` that points to that local path
+
+   ```sh
+   $ export MINIDUMP_STACKWALK=path/to/minidump_stackwalk
+   ```
+
+4. Locate the `symbols.zip` file for the Firefox build you are testing. Example: ftp://ftp.mozilla.org/pub/firefox/tinderbox-builds/mozilla-aurora-win32/1427442016/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
+
+5. Run the tests with a `--symbols-path` flag
+
+  ```sh
+   $ firefox-media-tests --binary $FF_PATH --symbols-path path/to/example/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
+  ```
+
+To check whether the above setup is working for you, fake a Firefox crash!
+
+1. Run the tests as described above.
+2. Find the process id (PID) of the Firefox process being used by the tests.
+
+  ```sh
+   $ ps x | grep 'Firefox' 
+  ```
+
+3. Kill that Firefox process with SIGABRT.
+  ```sh
+  # 1234 is an example of a PID 
+   $ kill -6 1234  
+  ```
+
+Somewhere in the output produced by `firefox-media-tests`, you should see something like:
+
+```
+0:12.68 CRASH: MainThread pid:1234. Test:test_basic_playback.py TestVideoPlayback.test_playback_starts. 
+Minidump anaylsed:False. 
+Signature:[@ XUL + 0x2a65900]
+Crash dump filename: 
+/var/folders/5k/xmn_fndx0qs2jcpcwhzl86wm0000gn/T/tmpB4Bolj.mozrunner/minidumps/DA3BB025-8302-4F96-8DF3-A97E424C877A.dmp
+Operating system: Mac OS X
+                  10.10.2 14C1514
+CPU: amd64
+     family 6 model 69 stepping 1
+     4 CPUs
+
+Crash reason:  EXC_SOFTWARE / SIGABRT
+Crash address: 0x104616900
+...
+```
+
 ### A warning about video URLs
 `video_data.ini`, `other_videos.ini` and `crash_videos.ini` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. I do not intend to ever verify or filter these URLs.
 
 Writing a test
 --------------
-Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firefox_media_tests`. Add it to the appropriate `manifest.ini` file as well.
+Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firefox_media_tests`. Add it to the appropriate `manifest.ini` file as well. Look at `media_player.py` for useful video-playback functions.
 
 * [Marionette docs][marionette-docs]
 * [Firefox Puppeteer docs][ff-puppeteer-docs]
