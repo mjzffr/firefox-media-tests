@@ -74,12 +74,15 @@ def wait_for_ads(yt):
         return youtube.ad_state == yt._yt_player_state['ENDED']
 
     while yt.breaks_count > 0:
-        if yt.player_stalled:
-            message = '\n'.join(['Playback stalled', str(yt)])
-            raise TimeoutException(message=message, cause=exc_info())
         if yt.player_remaining_time < 30:
-            # Remaining ad breaks probably at the very end of the video
+            # Remaining ad breaks are probably at the very end of the video
             break
+        if yt.player_stalled:
+            if yt.player_buffering:
+                continue
+            else:
+                message = '\n'.join(['Playback stalled', str(yt)])
+                raise TimeoutException(message=message)
         if not yt.attempt_ad_skip():
             duration = yt.search_ad_duration()
             if duration:

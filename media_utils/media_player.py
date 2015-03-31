@@ -248,14 +248,23 @@ class YouTubePuppeteer:
 
     @property
     def player_stalled(self):
+        """
+        :return True if playback is not making progress for 4-9 seconds. This
+        excludes ad breaks.
+
+        Note that the player might just be busy with buffering due to a slow
+        network.
+        """
         # `current_time` stands still while ad is playing
         def condition():
             return (self.get_player_progress() < 0.1 and
                     self.ad_state != self._yt_player_state['PLAYING'] and
-                    not self.player_paused)
+                    (self.player_playing or self.player_buffering))
+
         if condition():
             sleep(2)
-            # try again to be sure
+            if self.player_buffering:
+                sleep(5)
             return condition()
         else:
             return False
