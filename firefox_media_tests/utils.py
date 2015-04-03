@@ -79,7 +79,9 @@ def wait_for_ads(yt):
             break
         if yt.player_stalled:
             if yt.player_buffering:
-                continue
+                # fall back on timeout in 'wait' call that comes after this
+                # in test function
+                break
             else:
                 message = '\n'.join(['Playback stalled', str(yt)])
                 raise TimeoutException(message=message)
