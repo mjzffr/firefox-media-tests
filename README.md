@@ -64,7 +64,7 @@ Or you can run the tests that are listed in a manifest file of your choice.
    $ firefox-media-tests --binary $FF_PATH some/other/path/manifest.ini
    ```
 
-By default, the urls listed in `firefox_media_tests/video_data.ini` are used for the tests, but you can also supply your own ini file of urls:
+By default, the urls listed in `firefox_media_tests/urls/default.ini` are used for the tests, but you can also supply your own ini file of urls:
    
    ```sh
    $ firefox-media-tests --binary $FF_PATH --urls some/other/path/my_urls.ini
@@ -132,7 +132,7 @@ Crash address: 0x104616900
 ```
 
 ### A warning about video URLs
-`video_data.ini`, `other_videos.ini` and `crash_videos.ini` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. I do not intend to ever verify or filter these URLs.
+The ini files in `firefox_media_tests/urls` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. I do not intend to ever verify or filter these URLs.
 
 Writing a test
 --------------

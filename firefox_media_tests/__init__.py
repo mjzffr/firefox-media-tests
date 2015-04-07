@@ -13,8 +13,9 @@ def get_videos(video_manifest):
 root = os.path.abspath(os.path.dirname(__file__))
 manifest = os.path.join(root, 'manifest.ini')
 resources = os.path.join(root, 'resources')
+urls = os.path.join(root, 'urls')
 
 
 # default set of videos
 # (overwritten if --urls option is used)
-videos = get_videos(os.path.join(root, 'video_data.ini'))
+videos = get_videos(os.path.join(urls, 'default.ini'))
