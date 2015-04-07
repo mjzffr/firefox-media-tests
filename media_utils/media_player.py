@@ -35,7 +35,7 @@ class YouTubePuppeteer:
         wait = Wait(self.marionette, timeout=30)
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.url)
-            wait.until(expected.element_displayed(By.ID, 'movie_player'))
+            wait.until(expected.element_present(By.ID, 'movie_player'))
             self.player = self.marionette.find_element(By.ID, 'movie_player')
 
             wait.until(expected.element_displayed(By.CSS_SELECTOR,
