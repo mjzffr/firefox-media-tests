@@ -34,7 +34,6 @@ class TestVideoPlayback(FirefoxTestCase):
         with self.marionette.using_context('chrome'):
             self.prefs.set_pref('media.mediasource.enabled', value)
             self.prefs.set_pref('media.mediasource.mp4.enabled', value)
-            self.prefs.set_pref('media.mediasource.webm.enabled', value)
 
     def check_src(self, src_type, url):
         # Why wait to check src until initial ad is done playing?
