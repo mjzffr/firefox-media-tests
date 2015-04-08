@@ -70,6 +70,7 @@ def wait_for_ads(yt):
         # for videos that are longer than 20 minutes
         # wait longer between checks
         rest = 22
+
     def ad_done(youtube):
         return youtube.ad_state == yt._yt_player_state['ENDED']
 

@@ -6,9 +6,11 @@ import os
 import sys
 
 from firefox_puppeteer import manifest as puppeteer_manifest
-from firefox_ui_harness.runtests import (FirefoxUIOptions, FirefoxUITestRunner,
-                                         cli)
-from firefox_ui_tests import manifest as ui_manifest
+from firefox_ui_harness import cli
+from firefox_ui_harness.options import FirefoxUIOptions
+from firefox_ui_harness.runners import FirefoxUITestRunner
+from firefox_ui_tests import manifest_all as ui_manifest
+from firefox_ui_tests import resources as ui_resources
 
 import firefox_media_tests
 
@@ -44,8 +46,8 @@ class MediaTestOptions(FirefoxUIOptions):
 class MediaTestRunner(FirefoxUITestRunner):
     def __init__(self, *args, **kwargs):
         FirefoxUITestRunner.__init__(self, *args, **kwargs)
-        if not kwargs.get('server_root'):
-            kwargs['server_root'] = firefox_media_tests.resources
+        if not self.server_root or self.server_root == ui_resources:
+            self.server_root = firefox_media_tests.resources
 
 
 def run():

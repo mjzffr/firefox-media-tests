@@ -5,10 +5,8 @@ class TestSomethingElse(FirefoxTestCase):
     def setUp(self):
         FirefoxTestCase.setUp(self)
         self.test_urls = [
-            'layout/mozilla.html',
-            'layout/mozilla_mission.html',
-            'layout/mozilla_grants.html',
-        ]
+            'mozilla.html',
+            ]
         self.test_urls = [self.marionette.absolute_url(t)
                           for t in self.test_urls]
 
@@ -17,3 +15,5 @@ class TestSomethingElse(FirefoxTestCase):
 
     def test_foo(self):
         print 'foo!'
+        with self.marionette.using_context('content'):
+            self.marionette.navigate(self.test_urls[0])

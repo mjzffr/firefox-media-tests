@@ -269,7 +269,6 @@ class YouTubePuppeteer:
         else:
             return False
 
-
     def deactivate_autoplay(self):
         """
         Attempt to turn off autoplay. Return True if successful.
@@ -284,12 +283,12 @@ class YouTubePuppeteer:
 
         try:
             with mn.using_context('content'):
-                # the width and height of the element are 0, so it's not visible
+                # the width, height of the element are 0, so it's not visible
                 wait.until(expected.element_present(By.ID, element_id))
                 checkbox = mn.find_element(By.ID, element_id)
 
                 # Note: in some videos, due to late-loading of sidebar ads, the
-                # button is rerendered after sidebar ads appear and the autoplay
+                # button is rerendered after sidebar ads appear & the autoplay
                 # pref resets to "on". In other words, if you click too early,
                 # the pref might get reset moments later.
                 sleep(1)
