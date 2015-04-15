@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from manifestparser import read_ini
 import os
 import sys
 
@@ -13,6 +14,7 @@ from firefox_ui_tests import manifest_all as ui_manifest
 from firefox_ui_tests import resources as ui_resources
 
 import firefox_media_tests
+from .testcase import MediaTestCase
 
 
 class MediaTestOptions(FirefoxUIOptions):
@@ -28,13 +30,15 @@ class MediaTestOptions(FirefoxUIOptions):
     def parse_args(self, *args, **kwargs):
         options, test_files = FirefoxUIOptions.parse_args(self,
                                                           *args, **kwargs)
-        # fixme (hack?)
         if options.urls:
             if not os.path.isfile(options.urls):
                 self.error('--urls must provide a path to an ini file')
             else:
-                p = os.path.abspath(options.urls)
-                firefox_media_tests.videos = firefox_media_tests.get_videos(p)
+                path = os.path.abspath(options.urls)
+                options.video_urls = self.get_urls(path)
+        else:
+            default = os.path.join(firefox_media_tests.urls, 'default.ini')
+            options.video_urls = self.get_urls(default)
 
         # replace firefox_ui_tests with firefox_media_tests
         if set(test_files) <= {ui_manifest, puppeteer_manifest}:
@@ -42,12 +46,17 @@ class MediaTestOptions(FirefoxUIOptions):
 
         return (options, test_files)
 
+    def get_urls(self, manifest):
+        with open(manifest, 'r'):
+            return [line[0] for line in read_ini(manifest)]
+
 
 class MediaTestRunner(FirefoxUITestRunner):
     def __init__(self, *args, **kwargs):
         FirefoxUITestRunner.__init__(self, *args, **kwargs)
         if not self.server_root or self.server_root == ui_resources:
             self.server_root = firefox_media_tests.resources
+        self.test_handlers = [MediaTestCase]
 
 
 def run():

@@ -1,9 +1,9 @@
-from firefox_ui_harness.testcase import FirefoxTestCase
+from media_test_harness.testcase import MediaTestCase
 
 
-class TestSomethingElse(FirefoxTestCase):
+class TestSomethingElse(MediaTestCase):
     def setUp(self):
-        FirefoxTestCase.setUp(self)
+        MediaTestCase.setUp(self)
         self.test_urls = [
             'mozilla.html',
             ]
@@ -11,7 +11,7 @@ class TestSomethingElse(FirefoxTestCase):
                           for t in self.test_urls]
 
     def tearDown(self):
-        FirefoxTestCase.tearDown(self)
+        MediaTestCase.tearDown(self)
 
     def test_foo(self):
         print 'foo!'

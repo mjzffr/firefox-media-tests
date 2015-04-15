@@ -2,22 +2,21 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from firefox_ui_harness.testcase import FirefoxTestCase
+from media_test_harness.testcase import MediaTestCase
 from marionette_driver import Wait
 
-from firefox_media_tests import videos
 from firefox_media_tests.utils import verbose_until
 from media_utils.media_player import YouTubePuppeteer
 
 
-class TestVideoPlayback(FirefoxTestCase):
+class TestVideoPlayback(MediaTestCase):
     def setUp(self):
-        FirefoxTestCase.setUp(self)
-        self.test_urls = videos[:2]
+        MediaTestCase.setUp(self)
+        self.test_urls = self.video_urls[:2]
         self.max_timeout = 60
 
     def tearDown(self):
-        FirefoxTestCase.tearDown(self)
+        MediaTestCase.tearDown(self)
 
     def test_mse_is_enabled_by_default(self):
         self.check_src('mediasource', self.test_urls[1])
