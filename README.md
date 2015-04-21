@@ -76,7 +76,7 @@ By default, the urls listed in `firefox_media_tests/urls/default.ini` are used f
 
 What if Firefox crashes during a test run? You want to know why! To report useful crash data, the test runner needs access to a "minidump_stackwalk" binary and a "symbols.zip" file.
 
-1. Download `minidump_stackwalk` binary (save it whereever). Get it from https://hg.mozilla.org (under `build/tools/breakpad/[your platform]/minidump_stackwalk`).
+1. Download a `minidump_stackwalk` binary for your platform (save it whereever). Get it from http://hg.mozilla.org/build/tools/file/tip/breakpad/.
 2. Make `minidump_stackwalk` executable
 
    ```sh
@@ -89,7 +89,7 @@ What if Firefox crashes during a test run? You want to know why! To report usefu
    $ export MINIDUMP_STACKWALK=path/to/minidump_stackwalk
    ```
 
-4. Locate the `symbols.zip` file for the Firefox build you are testing. Example: ftp://ftp.mozilla.org/pub/firefox/tinderbox-builds/mozilla-aurora-win32/1427442016/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
+4. Locate the `crashreporter-symbols.zip` file for the Firefox build you are testing. Example: ftp://ftp.mozilla.org/pub/firefox/tinderbox-builds/mozilla-aurora-win32/1427442016/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
 
 5. Run the tests with a `--symbols-path` flag
 
