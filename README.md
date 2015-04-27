@@ -89,24 +89,23 @@ What if Firefox crashes during a test run? You want to know why! To report usefu
    $ export MINIDUMP_STACKWALK=path/to/minidump_stackwalk
    ```
 
-4. Locate the `crashreporter-symbols.zip` file for the Firefox build you are testing. Example: ftp://ftp.mozilla.org/pub/firefox/tinderbox-builds/mozilla-aurora-win32/1427442016/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
+4. Download the `crashreporter-symbols.zip` file for the Firefox build you are testing and extract it. Example: ftp://ftp.mozilla.org/pub/firefox/tinderbox-builds/mozilla-aurora-win32/1427442016/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
 
 5. Run the tests with a `--symbols-path` flag
 
   ```sh
-   $ firefox-media-tests --binary $FF_PATH --symbols-path path/to/example/firefox-38.0a2.en-US.win32.crashreporter-symbols.zip
+   $ firefox-media-tests --binary $FF_PATH --symbols-path path/to/example/firefox-38.0a2.en-US.win32.crashreporter-symbols
   ```
 
-To check whether the above setup is working for you, fake a Firefox crash!
+To check whether the above setup is working for you, trigger a (silly) Firefox crash while the tests are running. One way to do this is with the [crashme add-on](https://github.com/luser/crashme) -- you can add it to Firefox even while the tests are running. Another way:
 
-1. Run the tests as described above.
-2. Find the process id (PID) of the Firefox process being used by the tests.
+1. Find the process id (PID) of the Firefox process being used by the tests.
 
   ```sh
    $ ps x | grep 'Firefox' 
   ```
 
-3. Kill that Firefox process with SIGABRT.
+2. Kill the Firefox process with SIGABRT.
   ```sh
   # 1234 is an example of a PID 
    $ kill -6 1234  
