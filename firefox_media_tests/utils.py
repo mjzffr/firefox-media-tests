@@ -55,10 +55,11 @@ def playback_done(yt):
     return done
 
 
-def wait_for_ads(yt):
+def wait_for_almost_done(yt, final_piece=120):
     """
-    Allow the given video to play until it doesn't have any ad breaks left or
-    only 30 seconds remain, whichever comes first.
+    Allow the given video to play until only `final_piece` seconds remain,
+    skipping ads mid-way as much as possible.
+    `final_piece` should be short enough to not be interrupted by an ad.
 
     Depending on the length of the video, check the ad status every 10-30
     seconds, skip an active ad if possible.
@@ -66,18 +67,19 @@ def wait_for_ads(yt):
     :param yt: YouTubePuppeteer
     """
     rest = 10
-    if yt.player_duration > 1200:
-        # for videos that are longer than 20 minutes
+    duration = remaining_time = yt.player_duration
+    if duration < final_piece:
+        # video is short so don't attempt to skip ads
+        return
+    elif duration > 600:
+        # for videos that are longer than 10 minutes
         # wait longer between checks
-        rest = 22
+        rest = duration/50
 
     def ad_done(youtube):
         return youtube.ad_state == yt._yt_player_state['ENDED']
 
-    while yt.breaks_count > 0:
-        if yt.player_remaining_time < 30:
-            # Remaining ad breaks are probably at the very end of the video
-            break
+    while remaining_time > final_piece:
         if yt.player_stalled:
             if yt.player_buffering:
                 # fall back on timeout in 'wait' call that comes after this
@@ -86,13 +88,15 @@ def wait_for_ads(yt):
             else:
                 message = '\n'.join(['Playback stalled', str(yt)])
                 raise TimeoutException(message=message)
-        if not yt.attempt_ad_skip():
-            duration = yt.search_ad_duration()
-            if duration:
-                wait = Wait(yt, timeout=duration + 5)
-                verbose_until(wait, yt, ad_done)
-        if yt.breaks_count > 1:
+        if yt.breaks_count > 0:
+            if not yt.attempt_ad_skip():
+                # either ad is not playing or not skippable
+                duration = yt.search_ad_duration()
+                if duration:
+                    wait = Wait(yt, timeout=duration + 5)
+                    verbose_until(wait, yt, ad_done)
+        if remaining_time > 1.5 * rest:
             sleep(rest)
         else:
-            # check more frequently if only one ad break left.
-            sleep(1)
+            sleep(rest/2)
+        remaining_time = yt.player_remaining_time
