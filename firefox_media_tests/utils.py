@@ -51,6 +51,9 @@ def playback_done(yt):
     if yt.ad_state == yt._yt_player_state['PLAYING']:
         diff = yt.player_remaining_time
         yt.attempt_ad_skip()
+    current_time = yt.player_current_time
+    if current_time > 7200 and current_time < 7205: # temporary TODO remove
+        save_memory_report(yt.marionette)
     done = yt.player_ended or diff < 1
     return done
 
@@ -96,3 +99,23 @@ def wait_for_ads(yt):
         else:
             # check more frequently if only one ad break left.
             sleep(1)
+            
+#DfltDwnld CurProcD
+def save_memory_report(marionette):
+    """ Saves memory report (like about:memory) to current working directory."""
+    with marionette.using_context('chrome'):
+        marionette.execute_async_script("""
+            Components.utils.import("resource://gre/modules/Services.jsm");
+            let Cc = Components.classes;
+            let Ci = Components.interfaces;
+            let dumper = Cc["@mozilla.org/memory-info-dumper;1"].
+                        getService(Ci.nsIMemoryInfoDumper);
+            let file = Services.dirsvc.get("DfltDwnld", Ci.nsIFile);
+            file.append("memory-report");
+            file.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
+            file.append("memory-report.json.gz");
+            dumper.dumpMemoryReportsToNamedFile(file.path, null, null, false);
+            log('Saved memory report to ' + file.path);
+            marionetteScriptFinished(true);
+            return;
+        """, script_timeout=30000)
