@@ -110,12 +110,14 @@ def save_memory_report(marionette):
             let Ci = Components.interfaces;
             let dumper = Cc["@mozilla.org/memory-info-dumper;1"].
                         getService(Ci.nsIMemoryInfoDumper);
-            let file = Services.dirsvc.get("DfltDwnld", Ci.nsIFile);
-            file.append("memory-report");
+            let file = Services.dirsvc.get("CurProcD", Ci.nsIFile);
+            file.append("media-memory-report");
             file.createUnique(Ci.nsIFile.DIRECTORY_TYPE, 0777);
-            file.append("memory-report.json.gz");
+            file.append("media-memory-report.json.gz");
             dumper.dumpMemoryReportsToNamedFile(file.path, null, null, false);
             log('Saved memory report to ' + file.path);
+            // for dmd-enabled build
+            dumper.dumpMemoryInfoToTempDir("media", false, false);
             marionetteScriptFinished(true);
             return;
         """, script_timeout=30000)
