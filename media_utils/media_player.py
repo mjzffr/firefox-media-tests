@@ -41,6 +41,9 @@ class YouTubePuppeteer:
                                                   '#movie_player video'))
             self.video = self.marionette.find_element(By.CSS_SELECTOR,
                                                       '#movie_player video')
+            self.marionette.execute_script("""
+                log('URL:{} - movie_player and video elements obtained');
+            """.format(self.url))
 
     def attempt_ad_skip(self):
         """
