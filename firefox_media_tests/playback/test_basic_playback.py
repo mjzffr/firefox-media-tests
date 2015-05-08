@@ -6,7 +6,7 @@ from media_test_harness.testcase import MediaTestCase
 from marionette_driver import Wait
 
 from firefox_media_tests.utils import (playback_done, playback_started,
-                                       verbose_until, wait_for_ads)
+                                       verbose_until, wait_for_almost_done)
 from media_utils.media_player import YouTubePuppeteer
 
 
@@ -24,10 +24,8 @@ class TestVideoPlayback(MediaTestCase):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
                 youtube.deactivate_autoplay()
-                wait_for_ads(youtube)
-                verbose_until(Wait(youtube,
-                                   timeout=youtube.player_duration * 1.3),
-                              youtube,
+                wait_for_almost_done(youtube, final_piece=60)
+                verbose_until(Wait(youtube, timeout=300), youtube,
                               playback_done)
 
     def test_playback_starts(self):
@@ -35,5 +33,5 @@ class TestVideoPlayback(MediaTestCase):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
                 # TODO getting timeout on nightly sometimes.
-                verbose_until(Wait(youtube, timeout=30), youtube,
+                verbose_until(Wait(youtube, timeout=60), youtube,
                               playback_started)

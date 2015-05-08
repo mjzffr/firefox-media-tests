@@ -37,7 +37,6 @@ class YouTubePuppeteer:
             self.marionette.navigate(self.url)
             wait.until(expected.element_present(By.ID, 'movie_player'))
             self.player = self.marionette.find_element(By.ID, 'movie_player')
-
             wait.until(expected.element_displayed(By.CSS_SELECTOR,
                                                   '#movie_player video'))
             self.video = self.marionette.find_element(By.CSS_SELECTOR,
@@ -52,6 +51,9 @@ class YouTubePuppeteer:
         if (self.ad_state == self._yt_player_state['PLAYING'] or
                 self.get_player_progress() == 0):
             sleep(10)
+        else:
+            # no ad playing
+            return False
         if self.ad_skippable:
             selector = '#movie_player .videoAdUiSkipContainer'
             wait = Wait(self.marionette, timeout=30)
