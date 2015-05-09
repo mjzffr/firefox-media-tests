@@ -3,6 +3,10 @@ firefox-media-tests
 
 [Marionette Python tests][marionette-python-tests] for media playback in Mozilla Firefox. Uses [Firefox Puppeteer][ff-puppeteer-docs] library and parts of the test harness from [firefox-ui-tests][firefox_ui_tests].
 
+Branches
+--------
+The `pf-jenkins` branch contains additional code to automate test runs in a Jenkins instance maintained as part of the [Platform Quality](https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality) project at Mozilla. It implements supporting tasks like obtaining a Firefox binary and crash-symbols for the target platform, setting up a virtual environment, and so on.
+
 Setup
 -----
 
