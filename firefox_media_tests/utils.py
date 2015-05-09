@@ -51,9 +51,6 @@ def playback_done(yt):
     if yt.ad_state == yt._yt_player_state['PLAYING']:
         diff = yt.player_remaining_time
         yt.attempt_ad_skip()
-    current_time = yt.player_current_time
-    if current_time > 7200 and current_time < 7205: # temporary TODO remove
-        save_memory_report(yt.marionette)
     done = yt.player_ended or diff < 1
     return done
 
