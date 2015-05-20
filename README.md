@@ -144,6 +144,14 @@ Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firef
 * [Marionette docs][marionette-docs]
 * [Firefox Puppeteer docs][ff-puppeteer-docs]
 
+Special Requirements
+--------------------
+In order to run EME tests, you must use a profile that has logged into the EME provider and save the credentials. You must also use a custom .ini file like above. Ex:
+
+   ```sh
+   $ firefox-media-tests --binary $FF_PATH some/other/path/manifest.ini --profile custom_profile
+   ```
+See [Marionette Command Line Options](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options) for more options.
 
 License
 -------
