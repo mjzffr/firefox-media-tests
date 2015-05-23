@@ -122,8 +122,14 @@ class YouTubePuppeteer:
         # may return None
         text = self.execute_yt_script('return arguments[0].'
                                       'wrappedJSObject.getDebugText();')
-        if text:
-            return eval(text)
+        if text and text.count('{'):
+            try:
+                text = text.replace('false', 'False').replace('true', 'True')
+                return eval(text)
+            except Exception as e:
+                self.marionette.log('Exception: %s' % e.message, level='DEBUG')
+                self.marionette.log('Tried eval of %s' % text, level='DEBUG')
+                return None
         else:
             return None
 
