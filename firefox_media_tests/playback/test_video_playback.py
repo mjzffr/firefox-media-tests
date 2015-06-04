@@ -53,10 +53,5 @@ class TestVideoPlaybackBase(MediaTestCase):
                     start_time = video.current_time
                     verbose_until(Wait(video, interval=1, timeout=duration),
                                   video, playback_done)
-                except TimeoutException:
-                    # We want to make sure that the current time is near the
-                    # duration we want.
-                    if video.current_time < (start_time + duration):
-                        raise
                 except VideoException as e:
-                    raise self.failureException(e.__str__())
+                    raise self.failureException(e)

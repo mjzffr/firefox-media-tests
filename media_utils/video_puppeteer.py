@@ -5,7 +5,10 @@
 import re
 from time import sleep
 
-from marionette_driver import By, expected, Wait
+from marionette_driver import (By, expected, Wait)
+from marionette_driver.errors import TimeoutException
+
+from firefox_media_tests.utils import (verbose_until)
 
 # Adapted from https://github.com/gavinsharp/aboutmedia/blob/master/chrome/content/aboutmedia.xhtml
 _debug_script = """
@@ -78,9 +81,8 @@ def playback_done(video):
             return False
 
     raise VideoException('Did not find exactly one audio and one video '
-                         'active reader - url %s at %s'
-                         % (video.url, video.current_time))
-
+                         'active reader - %s'
+                         % video)
 
 class VideoPuppeteer:
     """
@@ -93,7 +95,8 @@ class VideoPuppeteer:
         wait = Wait(self.marionette, timeout=30)
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.url)
-            wait.until(expected.element_present(By.TAG_NAME, 'video'))
+            self.video = None
+            verbose_until(wait, self, expected.element_present(By.TAG_NAME, 'video'))
             self.video = self.marionette.find_element(By.TAG_NAME, 'video')
 
     def get_debug_lines(self):
@@ -110,12 +113,18 @@ class VideoPuppeteer:
     @property
     def duration(self):
         """ Return duration in seconds. """
+        if not self.video:
+            return ("NA")
+
         duration = self.execute_video_script('return arguments[0].'
                                              'wrappedJSObject.duration;')
         return duration
 
     @property
     def current_time(self):
+        if not self.video:
+            return ("NA")
+
         state = self.execute_video_script('return arguments[0].'
                                           'wrappedJSObject.currentTime;')
         return state
