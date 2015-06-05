@@ -5,9 +5,13 @@ __pycache__/
 
 #logs
 gecko.log
+logs/
 
 #other
 *.ignore
+build/
+properties/
+temp/
 
 #pycharm
 .idea/
