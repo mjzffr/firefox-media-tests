@@ -3,10 +3,6 @@ firefox-media-tests
 
 [Marionette Python tests][marionette-python-tests] for media playback in Mozilla Firefox. Uses [Firefox Puppeteer][ff-puppeteer-docs] library and parts of the test harness from [firefox-ui-tests][firefox_ui_tests].
 
-Branches
---------
-The `pf-jenkins` branch contains additional code to automate test runs in a Jenkins instance maintained as part of the [Platform Quality](https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality) project at Mozilla. It implements supporting tasks like obtaining a Firefox binary and crash-symbols for the target platform, setting up a virtual environment, and so on.
-
 Setup
 -----
 
@@ -48,7 +44,10 @@ Now `firefox-media-tests` should be a recognized command. Try `firefox-media-tes
 
 Running the Tests
 -----------------
-In the examples below, `$FF_PATH` with a path to a Firefox binary. _(Note - Mar 1, 2015: currently, these instructions only work for [Firefox Nightly][ff-nightly] 39 and Aurora 38. This depends on gecko-marionette version compatibility.)_
+
+_Note:_ see the section about [pf-jenkins](#the-pf-jenkins-branch) for more information about running the tests in an automation environment.
+
+In the examples below, `$FF_PATH` is a path to a Firefox binary (> v37, due to Gecko-Marionette compatibility). 
 
 This runs all the tests listed in `$PROJECT_HOME/firefox_media_tests/manifest.ini`:
 
@@ -74,7 +73,14 @@ By default, the urls listed in `firefox_media_tests/urls/default.ini` are used f
    $ firefox-media-tests --binary $FF_PATH --urls some/other/path/my_urls.ini
    ```
 
-`firefox-media-tests` works very much like `firefox-ui-tests`, so see [usage for firefox-ui-tests](https://github.com/mjzffr/firefox-ui-tests#usage)
+### Running EME tests
+
+In order to run EME tests, you must use a Firefox profile that has logged into the EME provider and saved the credentials. You must also use a custom .ini file for urls to the provider's content and indicate which test to run, like above. Ex:
+
+   ```sh
+   $ firefox-media-tests --binary $FF_PATH some/path/tests.ini --profile custom_profile --urls some/path/provider-urls.ini
+   ```
+
 
 ### Running tests in a way that provides information about a crash
 
@@ -139,19 +145,53 @@ The ini files in `firefox_media_tests/urls` may contain URLs pulled from Firefox
 
 Writing a test
 --------------
-Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firefox_media_tests`. Add it to the appropriate `manifest.ini` file as well. Look at `media_player.py` for useful video-playback functions.
+Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firefox_media_tests`. Add it to the appropriate `manifest.ini` file(s) as well. Look in `media_utils` for useful video-playback functions.
 
 * [Marionette docs][marionette-docs]
+  - [Marionette Command Line Options](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options) 
 * [Firefox Puppeteer docs][ff-puppeteer-docs]
 
-Special Requirements
---------------------
-In order to run EME tests, you must use a profile that has logged into the EME provider and save the credentials. You must also use a custom .ini file like above. Ex:
+The `pf-jenkins` Branch
+-----------------------
 
-   ```sh
-   $ firefox-media-tests --binary $FF_PATH some/other/path/manifest.ini --profile custom_profile
-   ```
-See [Marionette Command Line Options](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options) for more options.
+This branch contains additional code to automate test runs in a Jenkins instance maintained as part of the [Platform Quality](https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality) project at Mozilla. 
+
+The main point of interest is `run_media_tests.py`, which is a [mozharness](https://wiki.mozilla.org/ReleaseEngineering/Mozharness) script that runs the specified tests and reports results to [Treeherder](https://wiki.mozilla.org/Auto-tools/Projects/Treeherder). The script also sets up a virtual environment for the tests, controls logging, sets up a Firefox binary to test, sets up crash-reporter symbols, etc. Look for `all_actions` in the source for a full summary.
+
+To run `run_media_tests.py`, you must at least [download mozharness](https://hg.mozilla.org/build/mozharness/branches) and set the following environment variable:
+
+  ```sh
+  export MOZHARNESS_HOME=path/to/mozharness/directory
+  ```
+
+There's more documentation in `run_media_tests.py` itself and you can display the usage as follows:
+
+  ```sh
+  python run_media_tests.py --help
+  ```
+
+Keep in mind that, by default, `run_media_tests.py` will create and activate a virtual environment for you, so make sure to __deactivate any current virtual environment__ before you run the script.
+
+_(Optional!)_ Reporting results to Treeherder requires credentials for the project/repo you want to submit to (e.g. mozilla-central) as well as credentials for whereever you will upload logs (an S3 bucket). Look at `config/treeherder_submission.py` to learn more.
+
+The easiest way to turn off all the Treeherder stuff is to just add the `--no-treeherding` option. 
+
+### Examples
+* This runs just the tests in `test_example.py` using a Firefox installer that you've previously downloaded, printing debug-level logs and not submitting anything to Treeherder. 
+
+  ```sh
+python run_media_tests.py --installer-path=temp/firefox-41.0a1.en-US.mac64.dmg --tests=firefox_media_tests/playback/test_example.py --no-download-and-extract --no-treeherding --log-level=debug
+  ```
+ 
+* This does the same as above, except it runs all default tests and it _does_ submit to Treeherder. Custom job name/symbol to display on Treeherder are also specified. 
+  ```sh
+  python run_media_tests.py --installer-path=../temp/firefox-41.0a1.en-US.mac64.dmg --no-download-and-extract -c config/treeherder_submission.py --log-level=debug --job-symbol=t --job-name='Testing 123'
+  ```
+
+* This runs all the default tests but using custom media urls (medium1-60.ini). It downloads and sets up the Firefox installer and crash-reporter symbols at the specified urls. It submits the results to Treeherder. If the tests have no output for more than 4000 seconds, the firefox-media-test subprocess will be interrupted and the script will continue from there.
+  ```sh
+  python run_media_tests.py --installer-url <some_url> --symbols-url <some_url> --test-timeout 4000 --media-urls ./firefox_media_tests/urls/youtube/medium1-60.ini -c config/treeherder_submission.py
+  ```
 
 License
 -------
