@@ -12,6 +12,7 @@ logs/
 build/
 properties/
 temp/
+screenshots/
 
 #pycharm
 .idea/
