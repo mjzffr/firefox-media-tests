@@ -72,6 +72,7 @@ class JobResultParser(TestSummaryOutputParserHelper):
     BUSTED = 'busted'
     TESTFAILED = 'testfailed'
     UNKNOWN = 'unknown'
+    EXCEPTION = 'exception' #TODO
     SUCCESS = 'success'
     def __init__(self, **kwargs):
         super(JobResultParser, self).__init__(**kwargs)
@@ -309,12 +310,11 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         {'substr': r'''Could not successfully complete transport of message to Gecko, socket closed''', 'level': ERROR},
         {'substr': r'''Connection to Marionette server is lost. Check gecko''', 'level': ERROR},
         {'substr': 'Timeout waiting for marionette on port', 'level': ERROR},
-        {'substr': 'VideoException', 'level': ERROR},
-        {'substr': 'AssertionError', 'level': ERROR},
-        {'substr': 'ERROR', 'level': ERROR},
-        {'substr': 'FAIL', 'level': ERROR},
-        {'regex': re.compile(r'''(TEST-UNEXPECTED|PROCESS-CRASH|CRASH)'''), 'level': ERROR},
-        {'regex': re.compile(r'''(\b((?!Marionette|TestMarionette|NoSuchElement|XPathLookup|NoSuchWindow|StaleElement|ScriptTimeout|ElementNotVisible|NoSuchFrame|InvalidResponse|Javascript|Timeout|InvalidElementState|NoAlertPresent|InvalidCookieDomain|UnableToSetCookie|InvalidSelector|MoveTargetOutOfBounds)\w*)Exception)'''), 'level': ERROR},
+        {'regex': re.compile(r'''(TEST-UNEXPECTED|PROCESS-CRASH|CRASH|ERROR|FAIL)'''), 'level': ERROR},
+        #{'regex': re.compile(r'''(\b((?!Marionette|TestMarionette|NoSuchElement|XPathLookup|NoSuchWindow|StaleElement|ScriptTimeout|ElementNotVisible|NoSuchFrame|InvalidResponse|Javascript|Timeout|InvalidElementState|NoAlertPresent|InvalidCookieDomain|UnableToSetCookie|InvalidSelector|MoveTargetOutOfBounds)\w*)Exception)'''), 'level': ERROR},
+        {'regex': re.compile(r'''(TEST-UNEXPECTED|PROCESS-CRASH|CRASH|ERROR|FAIL)'''), 'level': ERROR},
+        {'regex': re.compile(r'''(\b\w*Exception)'''), 'level': ERROR},
+        {'regex': re.compile(r'''(\b\w*Error)'''), 'level': ERROR},
      ]
 
     config_options = [
