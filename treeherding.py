@@ -136,6 +136,7 @@ class Tier2Treeherder(object):
         :param rev: revision id for the changeset.
         """
         if not self.url or not project or not rev:
+            self.logger.debug(type(self).__name__ + '.request_revision_hash - ' + 'missing url, project or revision.')
             return None
 
         revurl = '%s/api/project/%s/revision-lookup/?revision=%s' % (
