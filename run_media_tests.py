@@ -452,8 +452,9 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         else:
             self.error("Marionette: %s" % status)
 
-        gecko_log = os.path.join(self.config['base_work_dir'], 'gecko.log')
-        log_dir = self.query_abs_dirs().get('abs_log_dir')
+        dirs = self.query_abs_dirs()
+        gecko_log = os.path.join(dirs['base_work_dir'], 'gecko.log')
+        log_dir = dirs.get('abs_log_dir')
         old_gecko_log = os.path.join(log_dir, 'gecko.log')
         if os.access(gecko_log, os.F_OK):
             if log_dir:
@@ -467,6 +468,14 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
                 self.run_command(['cat', gecko_log])
         else:
             self.info('gecko.log not found')
+
+        scrnshots_dir = os.path.join(dirs['base_work_dir'], 'screenshots')
+        old_scrnshots_dir = os.path.join(log_dir, 'screenshots')
+        if os.access(scrnshots_dir, os.F_OK):
+            if log_dir:
+                if os.access(old_scrnshots_dir, os.F_OK):
+                    self.rmtree(old_scrnshots_dir)
+                self.move(scrnshots_dir, old_scrnshots_dir)
 
     @PostScriptAction('create-virtualenv')
     def setup_treeherding(self, action, success=None):
@@ -534,11 +543,12 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             self.info("Treeherding is off or not set up; nothing to do.")
             return
         super(FirefoxMediaTest, self).update_job_complete(action)
-        log_dir = self.query_abs_dirs().get('abs_log_dir')
+        dirs = self.query_abs_dirs()
+        log_dir = dirs.get('abs_log_dir')
 
         # copy media_urls ini file with txt extension for convenient web view
         url_config = os.path.abspath(self.media_urls)
-        wrk_url_config = os.path.join(self.query_abs_dirs()['abs_work_dir'],
+        wrk_url_config = os.path.join(dirs['abs_work_dir'],
                                       os.path.basename(url_config) + '.txt')
         if os.access(wrk_url_config, os.F_OK):
             self.rmtree(wrk_url_config)
@@ -546,7 +556,7 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             self.copyfile(url_config, wrk_url_config)
         self.job.config_files.append(wrk_url_config)
 
-        # instead of uploading all logs, upload broadest and error
+        # instead of uploading all logs, upload broadest, error and gecko
         if log_dir:
             def add_log(name, parsed=False):
                 if not name:
@@ -558,15 +568,23 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
                     self.job.parsed_logs[log_path] = self.job_result_parser.failures
 
             add_log(self.log_obj.log_files.get('error'))
+            # Never upload debug logs
             if self.log_obj.log_level == 'debug':
-                # Don't upload debug logs
                 parsed_log = self.log_obj.log_files.get('info')
             else:
                 parsed_log = self.log_obj.log_files.get(self.log_obj.log_level)
             add_log(parsed_log, parsed=True)
             # in case of SimpleFileLogger
             add_log(self.log_obj.log_files.get('default'))
-            if log_dir == self.job.upload_dir:
+            # gecko.log
+            gecko_log = os.path.join(log_dir, 'gecko.log')
+            if os.path.exists(gecko_log):
+                self.job.log_files.append(gecko_log)
+            # Replace default upload dir (all logs) with screenshots
+            screenshots_dir = os.path.join(log_dir, 'screenshots')
+            if os.path.exists(screenshots_dir):
+                self.job.upload_dir = os.path.abspath(screenshots_dir)
+            else:
                 self.job.upload_dir = ''
 
 
