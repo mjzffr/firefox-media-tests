@@ -252,7 +252,7 @@ class TreeherdingMixin(object):
         self.job.machine['host'] = node()
         self.job.build['product'] = build['application_name']
         # Strip off domain from repo_url
-        repo_exp = re.compile(r"^https://hg.mozilla.org/(.*)$")
+        repo_exp = re.compile(r'https://hg.mozilla.org/.*(mozilla-\w+)$')
         repo_match = repo_exp.match(build['application_repository'])
         if repo_match:
             self.job.build['repo'] = repo_match.group(1)
