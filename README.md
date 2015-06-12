@@ -185,7 +185,7 @@ python run_media_tests.py --installer-path=temp/firefox-41.0a1.en-US.mac64.dmg -
  
 * This does the same as above, except it runs all default tests and it _does_ submit to Treeherder. Custom job name/symbol to display on Treeherder are also specified. 
   ```sh
-  python run_media_tests.py --installer-path=../temp/firefox-41.0a1.en-US.mac64.dmg --no-download-and-extract -c config/treeherder_submission.py --log-level=debug --job-symbol=t --job-name='Testing 123'
+  python run_media_tests.py --installer-path=temp/firefox-41.0a1.en-US.mac64.dmg --no-download-and-extract -c config/treeherder_submission.py --log-level=debug --job-symbol=t --job-name='Testing 123'
   ```
 
 * This runs all the default tests but using custom media urls (medium1-60.ini). It downloads and sets up the Firefox installer and crash-reporter symbols at the specified urls. It submits the results to Treeherder. If the tests have no output for more than 4000 seconds, the firefox-media-test subprocess will be interrupted and the script will continue from there.
