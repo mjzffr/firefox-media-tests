@@ -6,6 +6,8 @@
 
 import datetime
 import glob
+import logging
+from platform import node
 import os
 import re
 import tempfile
@@ -16,15 +18,194 @@ import requests
 import uuid
 import json
 
+import mozinfo
+import mozversion
 from thclient import TreeherderClient, TreeherderJobCollection
 
 from s3 import S3Error
 
-LEAK_RE = re.compile('\d+ bytes leaked \((.+)\)$')
-CRASH_RE = re.compile('.+ application crashed \[@ (.+)\]$')
+logger = logging.getLogger()
+
+releases = {'mozilla-central':'Nightly',
+            'mozilla-beta': 'Beta',
+            'mozilla-aurora': 'Aurora',
+            'mozilla-release': 'Release',
+            'mozilla-esr31': 'ESR31',
+            'mozilla-esr38': 'ESR38'}
+
+# Based on https://github.com/mozilla/treeherder/blob/master/treeherder/etl/buildbot.py; adapted to work with mozinfo
+platforms = [
+    {
+        'regex': re.compile(r'(mac|OS X).*(10\.10|yosemite).*(64)?',
+                            re.IGNORECASE),
+        'attributes': {
+            'os_name': 'mac',
+            'platform': 'osx-10-10',
+            'architecture': 'x86_64',
+        }
+    },
+    {
+        'regex': re.compile(r'(mac|OS X).*(10\.9|mavericks).*(64)?',
+                            re.IGNORECASE),
+        'attributes': {
+            'os_name': 'mac',
+            'platform': 'osx-10-9',
+            'architecture': 'x86_64',
+        }
+    },
+    {
+        'regex': re.compile(r'(mac|OS X).*(10\.8|mountain lion).*(64)?',
+                            re.IGNORECASE),
+        'attributes': {
+            'os_name': 'mac',
+            'platform': 'osx-10-8',
+            'architecture': 'x86_64',
+        }
+    },
+    {
+        'regex': re.compile(r'(mac|OS X).*(10\.7|lion).*(64)?', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'mac',
+            'platform': 'osx-10-7',
+            'architecture': 'x86_64',
+        }
+    },
+    {
+        'regex': re.compile(r'(mac|OS X).*(10\.6|snow[ ]?leopard).*(64)?',
+                            re.IGNORECASE),
+        'attributes': {
+            'os_name': 'mac',
+            'platform': 'osx-10-6',
+            'architecture': 'x86_64',
+        }
+    }, # ** Windows
+    {
+        'regex': re.compile(r'win(dows)?.*(5|5\.1|xp).*32', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'win',
+            'platform': 'windowsxp',
+            'architecture': 'x86',
+        }
+    },
+    {
+        'regex': re.compile(r'win(dows)?.*(6\.2|8).*64', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'win',
+            'platform': 'windows8-64',
+            'architecture': 'x86_64',
+        }
+    },
+    {
+        'regex': re.compile(r'win(dows)?.*(6\.2|8).*32', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'win',
+            'platform': 'windows8-32',
+            'architecture': 'x86',
+        }
+    },
+    {
+        'regex': re.compile(r'win(dows)?.*(6\.1|7).*32', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'win',
+            'platform': 'windows7-32',
+            'architecture': 'x86',
+        }
+    },
+    {
+        'regex': re.compile(r'win(dows)?.*(6\.1|7).*64', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'win',
+            'platform': 'windows7-64',
+            'architecture': 'x86_64',
+        }
+    }, # ** Linux **
+    {
+        'regex': re.compile(r'(linux|ubuntu).*64', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'linux',
+            'platform': 'linux64',
+            'architecture': 'x86_64',
+        }
+    },
+    {
+        'regex': re.compile(r'(linux|ubuntu).*32', re.IGNORECASE),
+        'attributes': {
+            'os_name': 'linux',
+            'platform': 'linux32',
+            'architecture': 'x86',
+        }
+    }
+]
 
 def timestamp_now():
     return int(time.mktime(datetime.datetime.now().timetuple()))
+
+
+def get_platform_attributes(pf):
+    """ Map a string like "Win 7 32-bit" to platform attributes recognized by
+    Treeherder
+    """
+    logger.debug('get_platform_attributes - pf: %s', pf)
+    for d in platforms:
+        if d['regex'].match(pf):
+            logger.debug('get_platform_attributes - matched pattern: %s',
+                         d['regex'].pattern)
+            return d['attributes']
+
+
+def collect_job_info(job, binary='', installer=''):
+    """ Set job attributes (build, machine, revision, etc.)
+        formatted to match Treeherder UI expectations.
+        Using mozinfo and mozversion
+        ref: https://github.com/mozilla/treeherder/blob/master/ui/js/values.js
+        job - TestJob
+        binary - path to firefox-bin
+        installer - installer filename
+    """
+    if not binary:
+        raise ValueError('Missing argument: binary.')
+    build = mozversion.get_version(binary=binary)
+    machine = mozinfo.info
+    machine_string = build_string =  ' '.join([machine['os'],
+                                               machine['version'],
+                                               str(machine['bits'])])
+    # Narrow down build architecture; doesn't necessarily match platform
+    if installer:
+        job.build['package'] = installer
+        if '64' in installer:
+            build_string = ' '.join([machine['os'], machine['version'], '64'])
+        if '32' in installer:
+            build_string = ' '.join([machine['os'], machine['version'], '32'])
+
+    # These don't match the expected Treeherder display; better than nothing.
+    backup_attributes = {
+        'platform': ' '.join([machine['os'].capitalize(),
+                              machine['version'],
+                              machine['processor']]),
+        'os_name': machine['os'],
+        'architecture': machine['processor']
+    }
+    job.build.update(backup_attributes)
+    job.machine.update(backup_attributes)
+    platform_attributes = get_platform_attributes(machine_string)
+    if platform_attributes:
+        job.machine.update(platform_attributes)
+    platform_attributes = get_platform_attributes(build_string)
+    if platform_attributes:
+        job.build.update(platform_attributes)
+    job.machine['host'] = node()
+    job.build['product'] = build['application_name']
+    repo_exp = re.compile(r'https://hg.mozilla.org/.*(mozilla-\w+)$')
+    repo_match = repo_exp.match(build['application_repository'])
+    if repo_match:
+        job.build['repo'] = repo_match.group(1)
+    else:
+        repo_url = build['application_repository'].rsplit('/')
+        job.build['repo'] = repo_url[-1]
+    job.build['release'] = releases[job.build['repo']]
+    job.build['revision'] = build['application_changeset']
+    job.build['build_id'] = build['application_buildid']
+
 
 def upload_file(s3_bucket, key_prefix, filepath, logger, job=None):
     filename = os.path.basename(filepath)
@@ -103,7 +284,6 @@ class Tier2Treeherder(object):
 
         client = TreeherderClient(protocol=self.protocol,
                                   host=self.server)
-
         for attempt in range(1, self.retries + 1):
             try:
                 client.post_collection(
@@ -512,8 +692,12 @@ class TestJob(object):
             'product': 'Firefox',
             'release': '',
             'repo': '',
+            # Used in Treeherder build info: win, mac, linux
             'os_name': '',
+            # Used in Treeherder revision summary,
+            # ex: 'windows7-64' will be displayed as Windows 7 x64
             'platform': '',
+            # Used in Treeheder build info: x86, x86_64
             'architecture': '',
             'package': '',
             'revision': '',
@@ -522,6 +706,8 @@ class TestJob(object):
         }
         self.machine = {
             'os_name': '',
+            # Used in Treeherder revision summary,
+            # ex: 'windows7-64' will be displayed as Windows 7 x64
             'platform': '',
             'architecture': '',
             'host': ''

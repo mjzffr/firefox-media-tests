@@ -61,13 +61,6 @@ treeherding_config_options = [
       }],
 ]
 
-releases = {'mozilla-central':'Nightly',
-            'mozilla-beta': 'Beta',
-            'mozilla-aurora': 'Aurora',
-            'mozilla-release': 'Release',
-            'mozilla-esr31': 'ESR31',
-            'mozilla-esr38': 'ESR38'}
-
 class JobResultParser(TestSummaryOutputParserHelper):
     BUSTED = 'busted'
     TESTFAILED = 'testfailed'
@@ -227,8 +220,10 @@ class TreeherdingMixin(object):
         if self.config['treeherding_off'] or not self.treeherder:
             self.info("Treeherding is off or not set up; nothing to do.")
             return
+        from treeherding import collect_job_info
         try:
-            self._set_job_build_info()
+            collect_job_info(self.job, self.binary_path,
+                             os.path.basename(self.installer_path))
             c = self.config
             self.job.group_name = c['group_name']
             self.job.group_symbol = c['group_symbol']
@@ -241,38 +236,6 @@ class TreeherdingMixin(object):
             self.warning("Unable to init job data (build, machine): %s" %
                          traceback.format_exc())
 
-    def _set_job_build_info(self):
-        """ Update this script's job info with machine/build properties """
-        import mozinfo
-        from platform import node
-        from mozversion import get_version
-        build = get_version(binary=self.binary_path)
-        machine = mozinfo.info
-        self.job.machine['os_name'] = machine['os']
-        self.job.machine['platform'] = machine['version']
-        self.job.machine['architecture'] = machine['processor']
-        self.job.machine['host'] = node()
-        self.job.build['product'] = build['application_name']
-        # Strip off domain from repo_url
-        repo_exp = re.compile(r'https://hg.mozilla.org/.*(mozilla-\w+)$')
-        repo_match = repo_exp.match(build['application_repository'])
-        if repo_match:
-            self.job.build['repo'] = repo_match.group(1)
-        else:
-            repo_url = build['application_repository'].rsplit('/')
-            self.job.build['repo'] = repo_url[-1]
-        self.job.build['release'] = releases[self.job.build['repo']]
-        self.job.build['os_name'] = machine['os']
-        self.job.build['package'] = os.path.basename(self.installer_path)
-        # TODO - brittle
-        self.job.build['architecture'] = self.job.machine['architecture']
-        if '64' in self.job.build['package']:
-            self.job.build['architecture'] = 'x64'
-        if '32' in self.job.build['package']:
-            self.job.build['architecture'] = 'x86'
-        self.job.build['platform'] = ' '.join([machine['os'].capitalize(), machine['version'], self.job.build['architecture']])
-        self.job.build['revision'] = build['application_changeset']
-        self.job.build['build_id'] = build['application_buildid']
 
     def submit_treeherder_running(self):
         """ Submit job to Treeherder with status "running".
