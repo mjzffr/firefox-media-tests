@@ -74,6 +74,7 @@ class JobResultParser(TestSummaryOutputParserHelper):
     UNKNOWN = 'unknown'
     EXCEPTION = 'exception' #TODO
     SUCCESS = 'success'
+    WARNINGS = 'warnings' #TODO
     def __init__(self, **kwargs):
         super(JobResultParser, self).__init__(**kwargs)
         self.return_code = 0
@@ -453,29 +454,23 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             self.error("Marionette: %s" % status)
 
         dirs = self.query_abs_dirs()
-        gecko_log = os.path.join(dirs['base_work_dir'], 'gecko.log')
         log_dir = dirs.get('abs_log_dir')
+        if not log_dir:
+            return
+        gecko_log = os.path.join(dirs['base_work_dir'], 'gecko.log')
         old_gecko_log = os.path.join(log_dir, 'gecko.log')
+        if os.access(old_gecko_log, os.F_OK):
+            self.rmtree(old_gecko_log)
         if os.access(gecko_log, os.F_OK):
-            if log_dir:
-                # TODO note - only files tracked by log_obj get copied to
-                # upload dir at end of script
-                if os.access(old_gecko_log, os.F_OK):
-                    self.rmtree(old_gecko_log)
-                self.move(gecko_log, log_dir)
-            elif return_code != 0:
-                self.info('dumping gecko.log')
-                self.run_command(['cat', gecko_log])
+            self.move(gecko_log, log_dir)
         else:
             self.info('gecko.log not found')
-
         scrnshots_dir = os.path.join(dirs['base_work_dir'], 'screenshots')
         old_scrnshots_dir = os.path.join(log_dir, 'screenshots')
+        if os.access(old_scrnshots_dir, os.F_OK):
+            self.rmtree(old_scrnshots_dir)
         if os.access(scrnshots_dir, os.F_OK):
-            if log_dir:
-                if os.access(old_scrnshots_dir, os.F_OK):
-                    self.rmtree(old_scrnshots_dir)
-                self.move(scrnshots_dir, old_scrnshots_dir)
+            self.move(scrnshots_dir, old_scrnshots_dir)
 
     @PostScriptAction('create-virtualenv')
     def setup_treeherding(self, action, success=None):
