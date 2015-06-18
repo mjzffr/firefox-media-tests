@@ -59,6 +59,21 @@ treeherding_config_options = [
       "dest": "job_symbol",
       "help": "Job symbol to submit to Treeherder. Typically one letter.",
       }],
+    [["--treeherder-url"],
+     {"action": "store",
+      "dest": "treeherder_url",
+      "help": "e.g. https://treeherder.allizom.org",
+      }],
+    [["--treeherder-credentials"],
+     {"action": "store",
+      "dest": "treeherder_credentials_path",
+      "help": "Path to credentials json file.",
+      }],
+    [["--s3-credentials"],
+     {"action": "store",
+      "dest": "s3_credentials_path",
+      "help": "Path to credentials json file",
+      }],
 ]
 
 class JobResultParser(TestSummaryOutputParserHelper):
