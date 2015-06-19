@@ -6,7 +6,7 @@ from media_test_harness.testcase import MediaTestCase
 from marionette_driver import Wait
 
 from firefox_media_tests.utils import verbose_until
-from media_utils.media_player import YouTubePuppeteer
+from media_utils.youtube_puppeteer import YouTubePuppeteer
 
 
 class TestVideoPlayback(MediaTestCase):
@@ -17,9 +17,6 @@ class TestVideoPlayback(MediaTestCase):
 
     def tearDown(self):
         MediaTestCase.tearDown(self)
-
-    def test_mse_is_enabled_by_default(self):
-        self.check_src('mediasource', self.test_urls[1])
 
     def test_mse_prefs(self):
         """ 'mediasource' should only be used if MSE prefs are enabled."""
@@ -42,7 +39,9 @@ class TestVideoPlayback(MediaTestCase):
             youtube = YouTubePuppeteer(self.marionette, url)
             youtube.attempt_ad_skip()
             wait = Wait(youtube,
-                        timeout=min(self.max_timeout, youtube.player_duration))
+                        timeout=min(self.max_timeout,
+                                    youtube.player_duration * 1.3),
+                        interval=1)
 
             def cond(y):
                 return y.video_src.startswith(src_type)
