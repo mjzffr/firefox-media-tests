@@ -32,8 +32,11 @@ class TestBasicYouTubePlayback(MediaTestCase):
             wait = Wait(youtube,
                         timeout=min(300, youtube.player_duration * 1.3),
                         interval=1)
-            verbose_until(wait, youtube,
-                          lambda y: y.video_src.startswith('mediasource'))
+            try:
+                verbose_until(wait, youtube,
+                              lambda y: y.video_src.startswith('mediasource'))
+            except TimeoutException as e:
+                raise self.failureException(e)
 
     def test_video_playing_in_one_tab(self):
         with self.marionette.using_context('content'):
@@ -67,5 +70,8 @@ class TestBasicYouTubePlayback(MediaTestCase):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
-                verbose_until(Wait(youtube, timeout=60, interval=1), youtube,
-                              playback_started)
+                try:
+                    verbose_until(Wait(youtube, timeout=60, interval=1),
+                                  youtube, playback_started)
+                except TimeoutException as e:
+                    raise self.failureException(e)
