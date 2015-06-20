@@ -5,6 +5,7 @@
 import os
 
 from firefox_ui_harness.testcase import FirefoxTestCase
+from firefox_media_tests.utils import timestamp_now
 
 class MediaTestCase(FirefoxTestCase):
 
@@ -19,8 +20,8 @@ class MediaTestCase(FirefoxTestCase):
 
     def save_screenshot(self):
         screenshot_dir = 'screenshots'
-        path = os.path.join(screenshot_dir,
-                            self.id().replace(' ', '-') + '.png')
+        filename = self.id().replace(' ', '-') + str(timestamp_now()) + '.png'
+        path = os.path.join(screenshot_dir, filename)
         if not os.path.exists(screenshot_dir):
             os.makedirs(screenshot_dir)
         with self.marionette.using_context('content'):
