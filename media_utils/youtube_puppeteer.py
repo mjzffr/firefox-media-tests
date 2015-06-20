@@ -41,9 +41,8 @@ class YouTubePuppeteer(VideoPuppeteer):
             verbose_until(wait, self,
                           expected.element_present(By.ID, 'movie_player'))
             self.player = self.marionette.find_element(By.ID, 'movie_player')
-            self.marionette.execute_script("""
-                log('URL:{} - #movie_player element obtained');
-            """.format(self.test_url))
+            self.marionette.execute_script("log('#movie_player "
+                                           "element obtained');")
 
     def player_play(self):
         """ Play via YouTube API. """
@@ -247,6 +246,7 @@ class YouTubePuppeteer(VideoPuppeteer):
                 ad_button = self.marionette.find_element(By.CSS_SELECTOR,
                                                          selector)
                 ad_button.click()
+                self.marionette.log('Skipped ad.')
                 return True
         else:
             return False

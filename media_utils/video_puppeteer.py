@@ -43,6 +43,8 @@ class VideoPuppeteer(object):
         wait = Wait(self.marionette, timeout=30)
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.test_url)
+            self.marionette.execute_script("""
+                log('URL: {0}');""".format(self.test_url))
             self.video = None
             verbose_until(wait, self,
                           expected.element_present(By.TAG_NAME, 'video'))
@@ -54,9 +56,7 @@ class VideoPuppeteer(object):
                                                           'Using first.')
             if len(videos_found) > 0:
                 self.video = videos_found[0]
-                self.marionette.execute_script("""
-                    log('URL:{} - video element obtained');
-                """.format(self.test_url))
+                self.marionette.execute_script("log('video element obtained');")
 
     def get_debug_lines(self):
         with self.marionette.using_context('chrome'):
