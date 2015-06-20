@@ -218,12 +218,17 @@ class YouTubePuppeteer(VideoPuppeteer):
 
     @property
     def ad_inactive(self):
+        # TODO what about ad 'NOT_STARTED'
         # `player_current_time` stands still while ad is playing
         if self.player_current_time > 0 or self.player_playing:
             return (self.player_measure_progress() > 0 or
                     self.ad_state == self._yt_player_state['ENDED'])
         else:
             return self.ad_state == self._yt_player_state['ENDED']
+    @property
+    def ad_playing(self):
+        return self.ad_state == self._yt_player_state['PLAYING']
+
 
     def attempt_ad_skip(self):
         """
@@ -231,8 +236,7 @@ class YouTubePuppeteer(VideoPuppeteer):
         Return True if clicking of ad-skip button occurred.
         """
         # Wait for ad to load and become skippable
-        if (self.ad_state == self._yt_player_state['PLAYING'] or
-                self.player_measure_progress() == 0):
+        if (self.ad_playing or self.player_measure_progress() == 0):
             sleep(10)
         else:
             # no ad playing
@@ -255,12 +259,10 @@ class YouTubePuppeteer(VideoPuppeteer):
         """
         :return: ad duration in seconds, if currently displayed in player
         """
-        if not (self.ad_state == self._yt_player_state['PLAYING'] or
-                self.player_measure_progress() == 0):
+        if not (self.ad_playing or self.player_measure_progress() == 0):
             return None
         # If the ad is not Flash...
-        if (self.ad_state == self._yt_player_state['PLAYING'] and
-                self.video_src.startswith('mediasource') and
+        if (self.ad_playing and self.video_src.startswith('mediasource') and
                 self.duration):
             return self.duration
         selector = '#movie_player .videoAdUiAttribution'
@@ -402,10 +404,11 @@ def wait_for_almost_done(yt, final_piece=120):
     # using yt.player_duration is crucial, since yt.duration might be the
     # duration of an ad (in the video element) rather than of target video
     # Nevertheless, it's still possible to get a duration of 0, depending on
-    # ad behaviour
+    # ad behaviour, so try to skip over initial ad
     for attempt in range(retries):
+        yt.attempt_ad_skip()
         duration = remaining_time = yt.player_duration
-        if duration > 5:
+        if duration > 5 and not yt.ad_playing:
             break
         else:
             sleep(1)
