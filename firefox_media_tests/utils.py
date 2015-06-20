@@ -3,7 +3,14 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from sys import exc_info
+import datetime
+import time
+
 from marionette_driver.errors import TimeoutException
+
+
+def timestamp_now():
+    return int(time.mktime(datetime.datetime.now().timetuple()))
 
 
 def verbose_until(wait, target, condition):
