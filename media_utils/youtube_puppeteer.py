@@ -258,6 +258,11 @@ class YouTubePuppeteer(VideoPuppeteer):
         if not (self.ad_state == self._yt_player_state['PLAYING'] or
                 self.player_measure_progress() == 0):
             return None
+        # If the ad is not Flash...
+        if (self.ad_state == self._yt_player_state['PLAYING'] and
+                self.video_src.startswith('mediasource') and
+                self.duration):
+            return self.duration
         selector = '#movie_player .videoAdUiAttribution'
         wait = Wait(self.marionette, timeout=5)
         try:
@@ -393,18 +398,20 @@ def wait_for_almost_done(yt, final_piece=120):
     """
     rest = 10
     retries = 5
+    duration = remaining_time = 0
     # using yt.player_duration is crucial, since yt.duration might be the
     # duration of an ad (in the video element) rather than of target video
-    # Nevertheless, it's still possible to get a duration of 0 if
+    # Nevertheless, it's still possible to get a duration of 0, depending on
+    # ad behaviour
     for attempt in range(retries):
         duration = remaining_time = yt.player_duration
-        if duration > 0:
+        if duration > 5:
             break
         else:
             sleep(1)
     if duration < final_piece:
         # video is short so don't attempt to skip ads
-        return
+        return duration
     elif duration > 600:
         # for videos that are longer than 10 minutes
         # wait longer between checks
@@ -418,7 +425,7 @@ def wait_for_almost_done(yt, final_piece=120):
             if yt.player_buffering:
                 # fall back on timeout in 'wait' call that comes after this
                 # in test function
-                break
+                return remaining_time
             else:
                 message = '\n'.join(['Playback stalled', str(yt)])
                 raise VideoException(message)
