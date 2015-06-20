@@ -425,7 +425,7 @@ def wait_for_almost_done(yt, final_piece=120):
             if yt.player_buffering:
                 # fall back on timeout in 'wait' call that comes after this
                 # in test function
-                return remaining_time
+                break
             else:
                 message = '\n'.join(['Playback stalled', str(yt)])
                 raise VideoException(message)
@@ -435,7 +435,11 @@ def wait_for_almost_done(yt, final_piece=120):
                 ad_duration = yt.search_ad_duration()
                 if ad_duration:
                     wait = Wait(yt, timeout=ad_duration + 5)
-                    verbose_until(wait, yt, ad_done)
+                    try:
+                        verbose_until(wait, yt, ad_done)
+                    except TimeoutException as e:
+                        yt.marionette.log('Waiting for ad to end '
+                                          'timed out: %s' % e, level='WARNING')
         if remaining_time > 1.5 * rest:
             sleep(rest)
         else:
@@ -443,3 +447,4 @@ def wait_for_almost_done(yt, final_piece=120):
         # using yt.player_duration is crucial, since yt.duration might be the
         # duration of an ad (in the video element) rather than of target video
         remaining_time = yt.player_remaining_time
+    return remaining_time
