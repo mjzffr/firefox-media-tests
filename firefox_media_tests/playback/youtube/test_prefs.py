@@ -9,7 +9,7 @@ from firefox_media_tests.utils import verbose_until
 from media_utils.youtube_puppeteer import YouTubePuppeteer
 
 
-class TestVideoPlayback(MediaTestCase):
+class TestMediaSourcePrefs(MediaTestCase):
     def setUp(self):
         MediaTestCase.setUp(self)
         self.test_urls = self.video_urls[:2]
