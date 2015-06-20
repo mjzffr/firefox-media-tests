@@ -29,8 +29,11 @@ class TestVideoPlaybackBase(MediaTestCase):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
                 video = VideoPuppeteer(self.marionette, url)
-                verbose_until(Wait(video, timeout=30), video,
-                              playback_started)
+                try:
+                    verbose_until(Wait(video, timeout=30), video,
+                                  playback_started)
+                except TimeoutException as e:
+                    raise self.failureException(e)
                 video.pause()
                 src = video.video_src
                 if not src.startswith('mediasource'):
