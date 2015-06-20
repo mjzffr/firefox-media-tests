@@ -8,7 +8,7 @@ from json import loads
 
 from marionette_driver import By, expected, Wait
 from marionette_driver.errors import TimeoutException, NoSuchElementException
-from video_puppeteer import VideoPuppeteer
+from video_puppeteer import VideoPuppeteer, VideoException
 from firefox_media_tests.utils import verbose_until
 
 
@@ -287,8 +287,10 @@ class YouTubePuppeteer(VideoPuppeteer):
         """
         # `current_time` stands still while ad is playing
         def condition():
-            return (self.player_measure_progress() < 0.1 and
-                    self.ad_state != self._yt_player_state['PLAYING'] and
+            # no ad is playing and current_time stands still
+            return (self.ad_state != self._yt_player_state['PLAYING'] and
+                    self.measure_progress() < 0.1 and
+                    self.player_measure_progress() < 0.1 and
                     (self.player_playing or self.player_buffering))
 
         if condition():
@@ -390,9 +392,16 @@ def wait_for_almost_done(yt, final_piece=120):
     :param yt: YouTubePuppeteer
     """
     rest = 10
+    retries = 5
     # using yt.player_duration is crucial, since yt.duration might be the
     # duration of an ad (in the video element) rather than of target video
-    duration = remaining_time = yt.player_duration
+    # Nevertheless, it's still possible to get a duration of 0 if
+    for attempt in range(retries):
+        duration = remaining_time = yt.player_duration
+        if duration > 0:
+            break
+        else:
+            sleep(1)
     if duration < final_piece:
         # video is short so don't attempt to skip ads
         return
@@ -412,7 +421,7 @@ def wait_for_almost_done(yt, final_piece=120):
                 break
             else:
                 message = '\n'.join(['Playback stalled', str(yt)])
-                raise TimeoutException(message=message)
+                raise VideoException(message)
         if yt.breaks_count > 0:
             if not yt.attempt_ad_skip():
                 # either ad is not playing or not skippable

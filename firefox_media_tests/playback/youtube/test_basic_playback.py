@@ -2,10 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from media_test_harness.testcase import MediaTestCase
 from marionette_driver import Wait
+from marionette_driver.errors import TimeoutException
 
 from firefox_media_tests.utils import verbose_until
+from media_test_harness.testcase import MediaTestCase
+from media_utils.video_puppeteer import VideoException
 from media_utils.youtube_puppeteer import (YouTubePuppeteer, playback_done,
                                            playback_started,
                                            wait_for_almost_done)
@@ -38,13 +40,28 @@ class TestBasicYouTubePlayback(MediaTestCase):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
                 youtube.deactivate_autoplay()
-                wait_for_almost_done(youtube, final_piece=60)
-                self.marionette.log('Almost done: '
-                                    '%s - %s seconds left.' %
-                                    (youtube.movie_id,
-                                     youtube.player_remaining_time))
-                verbose_until(Wait(youtube, timeout=300), youtube,
-                              playback_done)
+                try:
+                    wait_for_almost_done(youtube, final_piece=60)
+                except VideoException as e:
+                    raise self.failureException(e)
+                time_left = youtube.player_remaining_time
+                if time_left != 0:
+                    self.marionette.log('Almost done: '
+                                        '%s - %s seconds left.' %
+                                        (youtube.movie_id,
+                                         time_left))
+                else:
+                    self.marionette.log('Duration is 0 - %s' % youtube,
+                                        level='WARNING')
+                    self.save_screenshot()
+                try:
+                    verbose_until(Wait(youtube,
+                                       timeout=time_left * 1.3,
+                                       interval=1),
+                                  youtube,
+                                  playback_done)
+                except TimeoutException as e:
+                    raise self.failureException(e)
 
     def test_playback_starts(self):
         with self.marionette.using_context('content'):
