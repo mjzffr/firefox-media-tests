@@ -239,9 +239,6 @@ class YouTubePuppeteer(VideoPuppeteer):
             return
         ad_duration = self.search_ad_duration()
         if not ad_duration:
-            ad_state = self._yt_player_state_name[self.ad_state]
-            self.marionette.log('process_ad: nothing more to do. '
-                                'Ad state: %s' % ad_state)
             return
         ad_timeout = ad_duration + 5
         wait = Wait(self, timeout=ad_timeout, interval=1)
@@ -448,6 +445,7 @@ def wait_for_almost_done(yt, final_piece=120):
             if yt.player_buffering:
                 # fall back on timeout in 'wait' call that comes after this
                 # in test function
+                yt.marionette.log('Buffering and no playback progress.')
                 break
             else:
                 message = '\n'.join(['Playback stalled', str(yt)])
