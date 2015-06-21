@@ -225,10 +225,32 @@ class YouTubePuppeteer(VideoPuppeteer):
                     self.ad_state == self._yt_player_state['ENDED'])
         else:
             return self.ad_state == self._yt_player_state['ENDED']
+
     @property
     def ad_playing(self):
         return self.ad_state == self._yt_player_state['PLAYING']
 
+    @property
+    def ad_ended(self):
+        return self.ad_state == self._yt_player_state['ENDED']
+
+    def process_ad(self):
+        if self.attempt_ad_skip():
+            return
+        ad_duration = self.search_ad_duration()
+        if not ad_duration:
+            ad_state = self._yt_player_state_name[self.ad_state]
+            self.marionette.log('process_ad: nothing more to do. '
+                                'Ad state: %s' % ad_state)
+            return
+        ad_timeout = ad_duration + 5
+        wait = Wait(self, timeout=ad_timeout, interval=1)
+        try:
+            self.marionette.log('process_ad: waiting %s s for ad' % ad_timeout)
+            verbose_until(wait, self, lambda y: y.ad_ended)
+        except TimeoutException:
+            self.marionette.log('Waiting for ad to end timed out',
+                                level='WARNING')
 
     def attempt_ad_skip(self):
         """
@@ -236,7 +258,7 @@ class YouTubePuppeteer(VideoPuppeteer):
         Return True if clicking of ad-skip button occurred.
         """
         # Wait for ad to load and become skippable
-        if (self.ad_playing or self.player_measure_progress() == 0):
+        if self.ad_playing or self.player_measure_progress() == 0:
             sleep(10)
         else:
             # no ad playing
@@ -295,7 +317,7 @@ class YouTubePuppeteer(VideoPuppeteer):
         # `current_time` stands still while ad is playing
         def condition():
             # no ad is playing and current_time stands still
-            return (self.ad_state != self._yt_player_state['PLAYING'] and
+            return (not self.ad_playing and
                     self.measure_progress() < 0.1 and
                     self.player_measure_progress() < 0.1 and
                     (self.player_playing or self.player_buffering))
@@ -401,27 +423,25 @@ def wait_for_almost_done(yt, final_piece=120):
     rest = 10
     retries = 5
     duration = remaining_time = 0
+
     # using yt.player_duration is crucial, since yt.duration might be the
     # duration of an ad (in the video element) rather than of target video
     # Nevertheless, it's still possible to get a duration of 0, depending on
     # ad behaviour, so try to skip over initial ad
     for attempt in range(retries):
-        yt.attempt_ad_skip()
+        yt.process_ad()
         duration = remaining_time = yt.player_duration
         if duration > 5 and not yt.ad_playing:
             break
         else:
             sleep(1)
     if duration < final_piece:
-        # video is short so don't attempt to skip ads
+        # video is short so don't attempt to skip more ads
         return duration
     elif duration > 600:
         # for videos that are longer than 10 minutes
         # wait longer between checks
         rest = duration/50
-
-    def ad_done(youtube):
-        return youtube.ad_state == yt._yt_player_state['ENDED']
 
     while remaining_time > final_piece:
         if yt.player_stalled:
@@ -433,16 +453,7 @@ def wait_for_almost_done(yt, final_piece=120):
                 message = '\n'.join(['Playback stalled', str(yt)])
                 raise VideoException(message)
         if yt.breaks_count > 0:
-            if not yt.attempt_ad_skip():
-                # either ad is not playing or not skippable
-                ad_duration = yt.search_ad_duration()
-                if ad_duration:
-                    wait = Wait(yt, timeout=ad_duration + 5)
-                    try:
-                        verbose_until(wait, yt, ad_done)
-                    except TimeoutException as e:
-                        yt.marionette.log('Waiting for ad to end '
-                                          'timed out: %s' % e, level='WARNING')
+            yt.process_ad()
         if remaining_time > 1.5 * rest:
             sleep(rest)
         else:
