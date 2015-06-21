@@ -99,13 +99,13 @@ class VideoPuppeteer(object):
     def dropped_frames(self):
         return self.execute_video_script("""return
             arguments[0].getVideoPlaybackQuality()["droppedVideoFrames"];
-            """)
+            """) or 0
 
     @property
     def corrupted_frames(self):
         return self.execute_video_script("""return
             arguments[0].getVideoPlaybackQuality()["corruptedVideoFrames"];
-            """)
+            """) or 0
 
     @property
     def video_url(self):
