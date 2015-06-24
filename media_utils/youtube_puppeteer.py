@@ -388,8 +388,12 @@ def playback_started(yt):
     :param yt: YouTubePuppeteer
     """
     # usually, ad is playing during initial buffering
-    return yt.player_state in [yt._yt_player_state['PLAYING'],
-                               yt._yt_player_state['BUFFERING']]
+    if (yt.player_state in
+        [yt._yt_player_state['PLAYING'], yt._yt_player_state['BUFFERING']]):
+        return True
+    if yt.current_time > 0 or yt.player_current_time > 0:
+        return True
+    return False
 
 
 def playback_done(yt):
