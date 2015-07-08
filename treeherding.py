@@ -550,7 +550,7 @@ class Tier2Treeherder(object):
                 if (not log_url) or (log_file not in j.parsed_logs):
                     return
                 # TODO keep track of line numbers in log parser?
-                error_lines = [{'line': line, 'linenumber': 1} for line in j.parsed_logs[log_file]]
+                error_lines = [{'line': line, 'linenumber': None} for line in j.parsed_logs[log_file]]
                 tj.add_log_reference(os.path.basename(log_file),
                                      log_url, parse_status='parsed')
                 text_log_summary = {
@@ -560,19 +560,19 @@ class Tier2Treeherder(object):
                 },
                 'step_data': {
                     'all_errors': error_lines,
-                    'steps': [
-                        {
-                            'name': 'step',
-                            'started_linenumber': 1,
-                            'finished_linenumber': 1,
-                            'duration': j.end_timestamp - j.start_timestamp,
-                            'finished': '%s' % datetime.datetime.fromtimestamp(j.end_timestamp),
-                            'errors': error_lines,
-                            'error_count': len(error_lines),
-                            'order': 0,
-                            'result': j.result
-                        },
-                    ],
+                    #'steps': [
+                    #    {
+                    #        'name': 'step',
+                    #        'started_linenumber': 1,
+                    #        'finished_linenumber': 1,
+                    #        'duration': j.end_timestamp - j.start_timestamp,
+                    #        'finished': '%s' % datetime.datetime.fromtimestamp(j.end_timestamp),
+                    #        'errors': error_lines,
+                    #        'error_count': len(error_lines),
+                    #        'order': 0,
+                    #        'result': j.result
+                    #    },
+                    #],
                     'errors_truncated': False
                     },
                 'logurl': log_url
