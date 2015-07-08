@@ -554,10 +554,6 @@ class Tier2Treeherder(object):
                 tj.add_log_reference(os.path.basename(log_file),
                                      log_url, parse_status='parsed')
                 text_log_summary = {
-                'header': {
-                    'slave': j.machine['host'],
-                    'revision': revision_hash
-                },
                 'step_data': {
                     'all_errors': error_lines,
                     #'steps': [
