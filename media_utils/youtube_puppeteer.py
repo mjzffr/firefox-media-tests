@@ -401,12 +401,10 @@ def playback_done(yt):
     Check whether playback is done, skipping ads if possible.
     :param yt: YouTubePuppeteer
     """
-    diff = 1
-    # in case ad plays at end of video, also check time remaining
+    # in case ad plays at end of video
     if yt.ad_state == yt._yt_player_state['PLAYING']:
-        diff = yt.player_remaining_time
         yt.attempt_ad_skip()
-    done = yt.player_ended or diff < 1
+    done = yt.player_ended or yt.player_remaining_time < 1
     return done
 
 
