@@ -551,16 +551,19 @@ class Tier2Treeherder(object):
                     return
                 # TODO keep track of line numbers in log parser?
                 error_lines = [{'line': line, 'linenumber': None} for line in j.parsed_logs[log_file]]
-                tj.add_log_reference(os.path.basename(log_file),
+                # TODO If camd lands a fix, can use log's actual filaname as
+                # "log name" and then add a "name" field to text_log_summary
+                tj.add_log_reference('buildbot_text', #os.path.basename(log_file),
                                      log_url, parse_status='parsed')
+                # NOTE must have started_linenumber < finished_linenumber
                 text_log_summary = {
                 'step_data': {
                     'all_errors': error_lines,
                     #'steps': [
                     #    {
                     #        'name': 'step',
-                    #        'started_linenumber': 1,
-                    #        'finished_linenumber': 1,
+                    #        'started_linenumber': None,
+                    #        'finished_linenumber': None,
                     #        'duration': j.end_timestamp - j.start_timestamp,
                     #        'finished': '%s' % datetime.datetime.fromtimestamp(j.end_timestamp),
                     #        'errors': error_lines,
