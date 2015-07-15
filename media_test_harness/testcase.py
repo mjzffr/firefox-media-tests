@@ -4,9 +4,10 @@
 
 import os
 
-from firefox_ui_harness.testcase import FirefoxTestCase
+from firefox_ui_harness import FirefoxTestCase
 from firefox_media_tests.utils import timestamp_now
 from media_utils.video_puppeteer import VideoPuppeteer as VP
+
 
 class MediaTestCase(FirefoxTestCase):
 
