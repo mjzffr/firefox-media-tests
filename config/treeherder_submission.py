@@ -16,5 +16,8 @@ config = {
     # See https://github.com/mozilla/treeherder/blob/master/treeherder/model/sample_data/job_data.json.sample
     "job_description": "firefox-media-tests (video playback)",
     "job_reason": "scheduled",
-    "job_who": "PlatformQuality"
+    "job_who": "PlatformQuality",
+
+    # For log parsing
+    "log_date_format": '%Y-%m-%d %H:%M:%S'
 }

@@ -34,7 +34,8 @@ if mozharnesspath:
 else:
     print 'MOZHARNESSHOME not set'
 
-from mozharness.base.log import INFO, ERROR, WARNING, FATAL
+from mozharness.base.log import (INFO, ERROR, WARNING, FATAL,
+                                 SimpleFileLogger, MultiFileLogger)
 from mozharness.base.script import (BaseScript, PreScriptAction,
                                     PostScriptAction)
 from mozharness.mozilla.testing.testbase import (TestingMixin,
@@ -82,7 +83,6 @@ class JobResultParser(TestSummaryOutputParserHelper):
     UNKNOWN = 'unknown'
     EXCEPTION = 'exception' #TODO
     SUCCESS = 'success'
-    WARNINGS = 'warnings' #TODO
     def __init__(self, **kwargs):
         super(JobResultParser, self).__init__(**kwargs)
         self.return_code = 0
@@ -342,12 +342,17 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
           "default": os.environ.get('BUILD_URL', ''),
           "help": "$BUILD_URL in shell Jenkins build step",
           }],
+        [["--log-date-format"],
+         {"action": "store",
+          "dest": "log_date_format",
+          "default": None,
+          "help": r"Default: '%H:%M:%S'",
+          }],
     ] + (copy.deepcopy(testing_config_options) +
          copy.deepcopy(treeherding_config_options))
 
 
     def __init__(self):
-        # TODO if treeherding-off, skip/remove treeherding actions
         super(FirefoxMediaTest, self).__init__(
               config_options=self.config_options,
               all_actions=['clobber',
@@ -386,6 +391,37 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         self.profile = c.get('profile')
         self.test_timeout = int(c.get('test_timeout'))
         self.tests = c.get('tests')
+
+    # Allow config to set log_date_format
+    def new_log_obj(self, default_log_level="info"):
+        c = self.config
+        log_dir = os.path.join(c['base_work_dir'], c.get('log_dir', 'logs'))
+        log_config = {
+            "logger_name": 'Simple',
+            "log_name": 'log',
+            "log_dir": log_dir,
+            "log_level": default_log_level,
+            "log_format": '%(asctime)s %(levelname)8s - %(message)s',
+            "log_to_console": True,
+            "append_to_log": False,
+        }
+        # This is the only difference with overridden method
+        if c.get('log_date_format'):
+            log_config['log_date_format'] = c['log_date_format']
+        log_type = self.config.get("log_type", "multi")
+        for key in log_config.keys():
+            value = self.config.get(key, None)
+            if value is not None:
+                log_config[key] = value
+        if log_type == "multi":
+            self.log_obj = MultiFileLogger(**log_config)
+        else:
+            self.log_obj = SimpleFileLogger(**log_config)
+
+    @PostScriptAction()
+    def log_action_completed(self, action, success=None):
+        """ Record end of each action to simplify parsing log into steps """
+        self.info('##### Finished %s step. Success: %s' % (action, success))
 
     def preflight_download_and_extract(self):
         super(FirefoxMediaTest, self).preflight_download_and_extract()
