@@ -129,14 +129,14 @@ class TreeherdingMixin(object):
     def __init__(self, *args, **kwargs):
         super(TreeherdingMixin, self).__init__(*args, **kwargs)
         # instantiate after virtualenv is created
-        self.treeherder = None # Tier2Treeherder
+        self.treeherder = None # TreeherderSubmission
         self.job = None # TestJob
         self.job_result_parser = None # JobResultParser
         if self.config['treeherding_off']:
             return
         self.register_virtualenv_module('boto', method='pip',
                                         optional=True)
-        self.register_virtualenv_module('treeherder-client==1.3',
+        self.register_virtualenv_module('treeherder-client>=1.6',
                                         method='pip', optional=True)
         self.register_virtualenv_module('requests',
                                         method='pip', optional=True)
@@ -162,13 +162,13 @@ class TreeherdingMixin(object):
             # venv should be created by mozharness. We don't want a mozharness
             # venv within a venv created externally.)
             from s3 import S3Bucket
-            from treeherding import Tier2Treeherder, TestJob
+            from treeherding import TreeherderSubmission, TestJob
             options = self._get_treeherder_options()
             s3_bucket = self._get_s3_bucket()
             self.info("Initializing Treeherder client")
-            self.treeherder = Tier2Treeherder(self.log_obj.logger,
-                                              options,
-                                              s3_bucket)
+            self.treeherder = TreeherderSubmission(self.log_obj.logger,
+                                                   options,
+                                                   s3_bucket)
             self.job = TestJob()
         except Exception:
             self.warning("Unable to init Treeherder client: %s" %

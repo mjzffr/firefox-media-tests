@@ -20,7 +20,7 @@ import json
 
 import mozinfo
 import mozversion
-from thclient import TreeherderClient, TreeherderJobCollection
+from thclient import TreeherderAuth, TreeherderClient, TreeherderJobCollection
 
 from s3 import S3Error
 
@@ -242,10 +242,10 @@ class JobState(object):
     RUNNING = 'running'
 
 
-class Tier2Treeherder(object):
-
-    def __init__(self, logger, options, s3_bucket=None):
+class TreeherderSubmission(object):
+    def __init__(self, logger, options, s3_bucket=None, tier=2):
         self.logger = logger
+        self.tier = tier
         self.options = options
         self.s3_bucket = s3_bucket
         self.logger.debug(type(self).__name__)
@@ -275,22 +275,21 @@ class Tier2Treeherder(object):
             d[attr] = getattr(self, attr)
         return '%s' % d
 
-    # TODO post_collection
     def post_request(self, project, job_collection):
         dump = json.dumps(job_collection.get_collection_data(), indent=4, separators=(',', ': '))
         self.logger.debug(type(self).__name__ + '.post_request - '
                           'job_collection =\n%s' %
                           pretty(job_collection.get_collection_data()))
 
+        auth = TreeherderAuth(self.credentials[project]['consumer_key'],
+                             self.credentials[project]['consumer_secret'],
+                             project)
         client = TreeherderClient(protocol=self.protocol,
-                                  host=self.server)
+                                  host=self.server,
+                                  auth=auth)
         for attempt in range(1, self.retries + 1):
             try:
-                client.post_collection(
-                    project,
-                    self.credentials[project]['consumer_key'],
-                    self.credentials[project]['consumer_secret'],
-                    job_collection)
+                client.post_collection(project, job_collection)
                 self.logger.debug(type(self).__name__ +
                                   '.post_request - collection posted')
                 return
@@ -319,15 +318,16 @@ class Tier2Treeherder(object):
             self.logger.debug(type(self).__name__ + '.request_revision_hash - ' + 'missing url, project or revision.')
             return None
 
-        revurl = '%s/api/project/%s/revision-lookup/?revision=%s' % (
+        revurl = '%s/api/project/%s/resultset/?revision=%s' % (
             self.url, project, rev)
         revision_lookup = requests.get(revurl)
         message = 'GET: %s ' % revurl
         self.logger.debug(type(self).__name__ + '.request_revision_hash - ' + message)
 
         if revision_lookup.ok:
-            if revision_lookup.json().get(rev):
-                return revision_lookup.json().get(rev).get('revision_hash')
+            rev_results = revision_lookup.json().get('results')
+            if rev_results:
+                return rev_results[0].get('revision_hash')
             else:
                 message = 'Revision %s not found for %s.\n' % (rev, project)
 
@@ -351,7 +351,7 @@ class Tier2Treeherder(object):
             self.logger.debug(type(self).__name__ + '.submit_pending: no url/job')
             return
 
-        tjc = TreeherderJobCollection(job_type='update')
+        tjc = TreeherderJobCollection()
 
         for j in jobs:
             project = j.build['repo']
@@ -371,6 +371,7 @@ class Tier2Treeherder(object):
             tj = tjc.get_job()
             tj.add_description(j.description)
             tj.add_reason(j.reason)
+            tj.add_tier(self.tier)
             tj.add_revision_hash(revision_hash)
             tj.add_project(project)
             tj.add_who(j.who)
@@ -411,7 +412,7 @@ class Tier2Treeherder(object):
             self.logger.debug(type(self).__name__ + '.submit_running: no url/job')
             return
 
-        tjc = TreeherderJobCollection(job_type='update')
+        tjc = TreeherderJobCollection()
 
         for j in jobs:
             project = j.build['repo']
@@ -515,6 +516,7 @@ class Tier2Treeherder(object):
                 })
 
             tj = tjc.get_job()
+            tj.add_tier(self.tier)
             tj.add_description(j.description)
             tj.add_reason(j.reason)
             tj.add_revision_hash(revision_hash)
@@ -547,14 +549,11 @@ class Tier2Treeherder(object):
 
             # Add text_log_summary for each parsed log
             def process_parsed_log(log_file, log_url):
+                log_name =  os.path.basename(log_file)
                 if (not log_url) or (log_file not in j.parsed_logs):
                     return
-                # TODO keep track of line numbers in log parser?
                 error_lines = [{'line': line, 'linenumber': None} for line in j.parsed_logs[log_file]]
-                # TODO If camd lands a fix, can use log's actual filaname as
-                # "log name" and then add a "name" field to text_log_summary
-                tj.add_log_reference('buildbot_text', #os.path.basename(log_file),
-                                     log_url, parse_status='parsed')
+                tj.add_log_reference(log_name, log_url, parse_status='parsed')
                 # NOTE must have started_linenumber < finished_linenumber
                 text_log_summary = {
                 'step_data': {
@@ -574,7 +573,8 @@ class Tier2Treeherder(object):
                     #],
                     'errors_truncated': False
                     },
-                'logurl': log_url
+                'logurl': log_url,
+                'logname': log_name
                 }
                 tj.add_artifact('text_log_summary', 'json',
                                 json.dumps(text_log_summary))
