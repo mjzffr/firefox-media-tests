@@ -138,8 +138,6 @@ class TreeherdingMixin(object):
                                         optional=True)
         self.register_virtualenv_module('treeherder-client>=1.6',
                                         method='pip', optional=True)
-        self.register_virtualenv_module('requests',
-                                        method='pip', optional=True)
         # For populating self.job with build/machine data
         self.register_virtualenv_module('mozinfo',
                                         method='pip', optional=True)
