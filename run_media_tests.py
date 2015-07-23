@@ -41,6 +41,7 @@ from mozharness.base.script import (BaseScript, PreScriptAction,
 from mozharness.mozilla.testing.testbase import (TestingMixin,
                                                  testing_config_options)
 from mozharness.mozilla.testing.unittest import TestSummaryOutputParserHelper
+from parsers import BUSTED, TESTFAILED, UNKNOWN, EXCEPTION, SUCCESS
 
 treeherding_config_options = [
     [["--no-treeherding"],
@@ -78,34 +79,32 @@ treeherding_config_options = [
 ]
 
 class JobResultParser(TestSummaryOutputParserHelper):
-    BUSTED = 'busted'
-    TESTFAILED = 'testfailed'
-    UNKNOWN = 'unknown'
-    EXCEPTION = 'exception' #TODO
-    SUCCESS = 'success'
+    """ Parses test output to determine overall result."""
     def __init__(self, **kwargs):
         super(JobResultParser, self).__init__(**kwargs)
         self.return_code = 0
-        self.failure_re = re.compile(r'(^TEST-UNEXPECTED-FAIL|'
-                                     r'TEST-UNEXPECTED-ERROR)|'
-                                     r'(.*CRASH: )|'
-                                     r'(Crash reason: )')
-        self.failures = []
+        # External-resource errors that should not count as test failures
+        self.exception_re = re.compile(r'^TEST-UNEXPECTED-ERROR.*'
+                                       r'TimeoutException: Error loading page,'
+                                       r' timed out')
+        self.exceptions = []
 
     def parse_single_line(self, line):
         super(JobResultParser, self).parse_single_line(line)
-        if self.failure_re.match(line):
-            self.failures.append(line)
+        if self.exception_re.match(line):
+            self.exceptions.append(line)
 
     @property
     def status(self):
-        status = JobResultParser.UNKNOWN
+        status = UNKNOWN
         if self.passed and self.failed == 0:
-            status = JobResultParser.SUCCESS
+            status = SUCCESS
+        elif self.exceptions:
+            status = EXCEPTION
         elif self.failed:
-            status = JobResultParser.TESTFAILED
+            status = TESTFAILED
         elif self.return_code:
-            status = JobResultParser.BUSTED
+            status = BUSTED
         return status
 
 
@@ -270,7 +269,7 @@ class TreeherdingMixin(object):
             self.job.test_result = self.job_result_parser
             self.job.result = self.job.test_result.status
         else:
-            self.job.result = JobResultParser.UNKNOWN
+            self.job.result = UNKNOWN
         self.job.upload_dir = self.query_abs_dirs().get('abs_log_dir')
 
     def submit_treeherder_complete(self):
@@ -422,7 +421,10 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
     @PostScriptAction()
     def log_action_completed(self, action, success=None):
         """ Record end of each action to simplify parsing log into steps """
-        self.info('##### Finished %s step. Success: %s' % (action, success))
+        msg = '##### Finished %s step. Success: %s' % (action, success)
+        if action == 'run_marionette_tests' and self.job_result_parser:
+            msg += ' - Result: %s' % (self.job_result_parser.status or UNKNOWN)
+        self.info(msg)
 
     def preflight_download_and_extract(self):
         super(FirefoxMediaTest, self).preflight_download_and_extract()
@@ -509,7 +511,7 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
                                        output_parser=self.job_result_parser)
         self.job_result_parser.return_code = return_code
         status = self.job_result_parser.status
-        if status == JobResultParser.SUCCESS:
+        if status == SUCCESS:
             return_code = 0
             self.info("Marionette: %s" % status)
         else:
@@ -607,22 +609,22 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
 
         # instead of uploading all logs, upload broadest, error and gecko
         if log_dir:
-            def add_log(name, parsed=False):
+            def add_log(name, parse=False):
                 if not name:
                     return
                 log_path = os.path.join(log_dir, name)
                 if os.path.exists(log_path):
                     self.job.log_files.append(log_path)
-                if parsed:
-                    self.job.parsed_logs[log_path] = self.job_result_parser.failures
+                if parse:
+                    self.job.parsed_logs.append(log_path)
 
             add_log(self.log_obj.log_files.get('error'))
             # Never upload debug logs
             if self.log_obj.log_level == 'debug':
-                parsed_log = self.log_obj.log_files.get('info')
+                main_log = self.log_obj.log_files.get('info')
             else:
-                parsed_log = self.log_obj.log_files.get(self.log_obj.log_level)
-            add_log(parsed_log, parsed=True)
+                main_log = self.log_obj.log_files.get(self.log_obj.log_level)
+            add_log(main_log, parse=True)
             # in case of SimpleFileLogger
             add_log(self.log_obj.log_files.get('default'))
             # extra log files saved by marionette

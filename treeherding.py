@@ -21,6 +21,7 @@ import mozinfo
 import mozversion
 from thclient import TreeherderAuth, TreeherderClient, TreeherderJobCollection
 
+from parsers import parse_log
 from s3 import S3Error
 
 logger = logging.getLogger()
@@ -593,35 +594,14 @@ class TreeherderSubmission(object):
 
             # Job details and other artifacts
 
-            # Add text_log_summary for each parsed log
-            def process_parsed_log(log_file, log_url):
+            # Create/add text_log_summary for each log that should be parsed
+            def build_log_artifacts(log_file, log_url):
                 log_name = os.path.basename(log_file)
                 if (not log_url) or (log_file not in j.parsed_logs):
                     return
-                error_lines = [{'line': line, 'linenumber': None} for line in j.parsed_logs[log_file]]
                 tj.add_log_reference(log_name, log_url, parse_status='parsed')
                 # NOTE must have started_linenumber < finished_linenumber
-                text_log_summary = {
-                'step_data': {
-                    'all_errors': error_lines,
-                    #'steps': [
-                    #    {
-                    #        'name': 'step',
-                    #        'started_linenumber': None,
-                    #        'finished_linenumber': None,
-                    #        'duration': j.end_timestamp - j.start_timestamp,
-                    #        'finished': '%s' % datetime.datetime.fromtimestamp(j.end_timestamp),
-                    #        'errors': error_lines,
-                    #        'error_count': len(error_lines),
-                    #        'order': 0,
-                    #        'result': j.result
-                    #    },
-                    #],
-                    'errors_truncated': False
-                    },
-                'logurl': log_url,
-                'logname': log_name
-                }
+                text_log_summary = parse_log(log_file, log_url)
                 tj.add_artifact('text_log_summary', 'json',
                                 json.dumps(text_log_summary))
                 self.logger.debug(type(self).__name__ +
@@ -635,12 +615,12 @@ class TreeherderSubmission(object):
                 for path in filepaths:
                     url = upload_file(self.s3_bucket, prefix,
                                       path, self.logger, j)
-                    process_parsed_log(path, url)
+                    build_log_artifacts(path, url)
                 if j.upload_dir:
                     for f in glob.glob(os.path.join(j.upload_dir, '*')):
                         url = upload_file(self.s3_bucket, prefix, f,
                                           self.logger, j)
-                        process_parsed_log(path, url)
+                        build_log_artifacts(path, url)
             tj.add_artifact('Job Info', 'json', {'job_details': j.job_details})
             for a in j.artifacts:
                 tj.add_artifact(*a)
@@ -764,7 +744,8 @@ class TestJob(object):
         self.description = ''
         self.who = ''
         self.message = ''  # e.g. summary to report alongside test results
-        self.parsed_logs = {}
+        # logs that should be parsed for text_log_summary artifact
+        self.parsed_logs = []
 
     @property
     def unique_s3_prefix(self):
