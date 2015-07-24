@@ -86,9 +86,10 @@ class JobResultParser(TestSummaryOutputParserHelper):
     def __init__(self, **kwargs):
         super(JobResultParser, self).__init__(**kwargs)
         self.return_code = 0
-        self.failure_re = re.compile(r'((FAIL|ERROR) test\S+)|'
-                                     r'(.*CRASH: \S+)|'
-                                     r'(Crash reason: \S+)')
+        self.failure_re = re.compile(r'(^TEST-UNEXPECTED-FAIL|'
+                                     r'TEST-UNEXPECTED-ERROR)|'
+                                     r'(.*CRASH: )|'
+                                     r'(Crash reason: )')
         self.failures = []
 
     def parse_single_line(self, line):
@@ -389,6 +390,7 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         self.profile = c.get('profile')
         self.test_timeout = int(c.get('test_timeout'))
         self.tests = c.get('tests')
+        self.media_logs = set(['gecko.log'])
 
     # Allow config to set log_date_format
     def new_log_obj(self, default_log_level="info"):
@@ -445,6 +447,16 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             cmd += ['--profile', self.profile]
         if self.tests:
             cmd.append(self.tests)
+        # configure logging
+        dirs = self.query_abs_dirs()
+        log_dir = dirs['abs_log_dir']
+        cmd += ['--gecko-log', os.path.join(log_dir, 'gecko.log')]
+        self.media_logs.add('gecko.log')
+        cmd += ['--log-tbpl', '-']
+        cmd += ['--log-html', os.path.join(log_dir, 'media_tests.html')]
+        self.media_logs.add('media_tests.html')
+        cmd += ['--log-mach', os.path.join(log_dir, 'media_tests_mach.log')]
+        self.media_logs.add('media_tests_mach.log')
         return cmd
 
     def run_marionette_tests(self):
@@ -469,14 +481,6 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         log_dir = dirs.get('abs_log_dir')
         if not log_dir:
             return
-        gecko_log = os.path.join(dirs['base_work_dir'], 'gecko.log')
-        old_gecko_log = os.path.join(log_dir, 'gecko.log')
-        if os.access(old_gecko_log, os.F_OK):
-            self.rmtree(old_gecko_log)
-        if os.access(gecko_log, os.F_OK):
-            self.move(gecko_log, log_dir)
-        else:
-            self.info('gecko.log not found')
         scrnshots_dir = os.path.join(dirs['base_work_dir'], 'screenshots')
         old_scrnshots_dir = os.path.join(log_dir, 'screenshots')
         if os.access(old_scrnshots_dir, os.F_OK):
@@ -583,10 +587,9 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             add_log(parsed_log, parsed=True)
             # in case of SimpleFileLogger
             add_log(self.log_obj.log_files.get('default'))
-            # gecko.log
-            gecko_log = os.path.join(log_dir, 'gecko.log')
-            if os.path.exists(gecko_log):
-                self.job.log_files.append(gecko_log)
+            # extra log files saved by marionette
+            for f in self.media_logs:
+                add_log(f)
             # Replace default upload dir (all logs) with screenshots
             screenshots_dir = os.path.join(log_dir, 'screenshots')
             if os.path.exists(screenshots_dir):
