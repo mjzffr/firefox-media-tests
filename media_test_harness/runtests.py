@@ -14,7 +14,7 @@ from firefox_ui_tests import manifest_all as ui_manifest
 from firefox_ui_tests import resources as ui_resources
 
 import firefox_media_tests
-from .testcase import MediaTestCase
+from testcase import MediaTestCase
 
 
 class MediaTestOptions(FirefoxUIOptions):
