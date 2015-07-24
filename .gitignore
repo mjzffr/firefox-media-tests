@@ -14,5 +14,8 @@ properties/
 temp/
 screenshots/
 
+#pyenv
+.python-version
+
 #pycharm
 .idea/
