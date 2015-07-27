@@ -43,8 +43,10 @@ class TestBasicYouTubePlayback(MediaTestCase):
             for url in self.test_urls:
                 youtube = YouTubePuppeteer(self.marionette, url)
                 youtube.deactivate_autoplay()
+                final_piece = 60
                 try:
-                    time_left = wait_for_almost_done(youtube, final_piece=60)
+                    time_left = wait_for_almost_done(youtube,
+                                                     final_piece=final_piece)
                 except VideoException as e:
                     raise self.failureException(e)
                 duration = abs(youtube.player_duration) + 1
@@ -53,6 +55,9 @@ class TestBasicYouTubePlayback(MediaTestCase):
                                         '%s - %s seconds left.' %
                                         (youtube.movie_id,
                                          time_left))
+                    if time_left > final_piece:
+                        self.marionette.log('time_left greater than final_piece - %s' % time_left, level='WARNING')
+                        self.save_screenshot()
                 else:
                     self.marionette.log('Duration close to 0 - %s' % youtube,
                                         level='WARNING')
