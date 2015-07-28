@@ -263,16 +263,20 @@ class YouTubePuppeteer(VideoPuppeteer):
         if self.ad_skippable:
             selector = '#movie_player .videoAdUiSkipContainer'
             wait = Wait(self.marionette, timeout=30)
-            with self.marionette.using_context('content'):
-                wait.until(expected.element_displayed(By.CSS_SELECTOR,
-                                                      selector))
-                ad_button = self.marionette.find_element(By.CSS_SELECTOR,
-                                                         selector)
-                ad_button.click()
-                self.marionette.log('Skipped ad.')
-                return True
-        else:
-            return False
+            try:
+                with self.marionette.using_context('content'):
+                    wait.until(expected.element_displayed(By.CSS_SELECTOR,
+                                                          selector))
+                    ad_button = self.marionette.find_element(By.CSS_SELECTOR,
+                                                             selector)
+                    ad_button.click()
+                    self.marionette.log('Skipped ad.')
+                    return True
+            except (TimeoutException, NoSuchElementException):
+                self.marionette.log('Could not obtain '
+                                    'element: %s' % selector,
+                                    level='WARNING')
+        return False
 
     def search_ad_duration(self):
         """
@@ -297,10 +301,11 @@ class YouTubePuppeteer(VideoPuppeteer):
                     ad_minutes = int(ad_time.group('minute'))
                     ad_seconds = int(ad_time.group('second'))
                     return 60 * ad_minutes + ad_seconds
-                else:
-                    return None
-        except TimeoutException:
-            return None
+        except (TimeoutException, NoSuchElementException):
+            self.marionette.log('Could not obtain '
+                                'element: %s' % selector,
+                                level='WARNING')
+        return None
 
     @property
     def player_stalled(self):
