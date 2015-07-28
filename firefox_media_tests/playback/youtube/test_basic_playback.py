@@ -56,7 +56,9 @@ class TestBasicYouTubePlayback(MediaTestCase):
                                         (youtube.movie_id,
                                          time_left))
                     if time_left > final_piece:
-                        self.marionette.log('time_left greater than final_piece - %s' % time_left, level='WARNING')
+                        self.marionette.log('time_left greater than '
+                                            'final_piece - %s' % time_left,
+                                            level='WARNING')
                         self.save_screenshot()
                 else:
                     self.marionette.log('Duration close to 0 - %s' % youtube,

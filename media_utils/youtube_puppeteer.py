@@ -389,7 +389,8 @@ def playback_started(yt):
     """
     # usually, ad is playing during initial buffering
     if (yt.player_state in
-            [yt._yt_player_state['PLAYING'], yt._yt_player_state['BUFFERING']]):
+            [yt._yt_player_state['PLAYING'],
+             yt._yt_player_state['BUFFERING']]):
         return True
     if yt.current_time > 0 or yt.player_current_time > 0:
         return True
