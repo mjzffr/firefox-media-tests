@@ -36,7 +36,9 @@ def verbose_until(wait, target, condition):
 
 
 def save_memory_report(marionette):
-    """ Saves memory report (like about:memory) to current working directory."""
+    """
+    Saves memory report (like about:memory) to current working directory.
+    """
     with marionette.using_context('chrome'):
         marionette.execute_async_script("""
             Components.utils.import("resource://gre/modules/Services.jsm");
