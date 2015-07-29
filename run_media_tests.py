@@ -386,6 +386,7 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         c = self.config
         self.installer_url = c.get('installer_url')
         self.symbols_url = c.get('symbols_url')
+        self.test_packages_url = c.get('test_packages_url')
         self.media_urls = c.get('media_urls')
         self.profile = c.get('profile')
         self.test_timeout = int(c.get('test_timeout'))
@@ -431,6 +432,43 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
                         "You can set this by specifying --symbols-url URL.\n")
         if message:
             self.fatal(message + "Can't run download-and-extract... exiting")
+
+    def download_and_extract(self, target_unzip_dirs=None):
+        """
+        download and extract test zip / download installer
+
+        hiding TestingMixin's implementation to be able to skip
+        _download_test_zip and _read_tree_config
+        """
+        # Swap plain http for https when we're downloading from ftp
+        # See bug 957502 and friends
+        from_ = "http://ftp.mozilla.org"
+        to_ = "https://ftp-ssl.mozilla.org"
+        for attr in 'test_url', 'symbols_url', 'installer_url':
+            url = getattr(self, attr)
+            if url and url.startswith(from_):
+                new_url = url.replace(from_, to_)
+                self.info("Replacing url %s -> %s" % (url, new_url))
+                setattr(self, attr, new_url)
+
+        if self.test_url:
+            # A user has specified a test_url directly, any test_packages_url
+            # will be ignored.
+            if self.test_packages_url:
+                self.error('Test data will be downloaded from "%s", the'
+                           ' specified test '
+                           ' package data at "%s" will be ignored.' %
+                           (self.config('test_url'), self.test_packages_url))
+            self._download_test_zip()
+            self._extract_test_zip(target_unzip_dirs=target_unzip_dirs)
+        elif self.test_packages_url:
+            suite_categories = suite_categories or ['common']
+            self._download_test_packages(suite_categories, target_unzip_dirs)
+
+        #self._read_tree_config()
+        self._download_installer()
+        if self.config.get('download_symbols'):
+            self._download_and_extract_symbols()
 
     def _query_cmd(self):
         """ Determine how to call firefox-media-tests """
