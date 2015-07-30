@@ -14,6 +14,6 @@ class TestSomethingElse(MediaTestCase):
         MediaTestCase.tearDown(self)
 
     def test_foo(self):
-        print 'foo!'
+        self.logger.info('foo!')
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.test_urls[0])
