@@ -232,6 +232,29 @@ def upload_file(s3_bucket, key_prefix, filepath, logger, job=None):
         logger.exception('\n'.join([message, traceback.format_exc()]))
 
 
+def get_from_treeherder(url, logger):
+    """ Retrieves json results of a GET request to Treeherder's API
+    :param url: url of API endpoint
+    """
+    api_lookup = requests.get(url)
+    message = 'GET: %s' % url
+    logger.debug('get_from_treeherder - ' + message)
+
+    if api_lookup.ok:
+        return api_lookup.json()
+    else:
+        message = ('Request to Treeherder API failed - \n\n'
+                   'status: %s \n'
+                   'reason: %s \n'
+                   'headers: %s \n'
+                   'body: %s\n' % (api_lookup.status_code,
+                                   api_lookup.reason,
+                                   api_lookup.headers,
+                                   api_lookup.text))
+        logger.error(message)
+        return {}
+
+
 def pretty(data):
     return json.dumps(data, indent=4, separators=(',', ': '))
 
@@ -289,8 +312,12 @@ class TreeherderSubmission(object):
         for attempt in range(1, self.retries + 1):
             try:
                 client.post_collection(project, job_collection)
-                self.logger.debug(type(self).__name__ +
-                                  '.post_request - collection posted')
+                self.logger.info(type(self).__name__ +
+                                 '.post_request - collection posted')
+                if guid:
+                    job_url = self.request_job_url(project, guid)
+                    self.logger.info(type(self).__name__ +
+                                     '.post_request - url is %s' % job_url)
                 return
             except requests.exceptions.Timeout:
                 message = ('Attempt %d to post result to '
@@ -304,7 +331,34 @@ class TreeherderSubmission(object):
                            (e, pretty(job_collection.get_collection_data())))
                 self.logger.exception(message)
                 return
-        log.error('Error submitting request to Treeherder.')
+        self.logger.error('Error submitting request to Treeherder.')
+
+    def request_job_url(self, project, guid):
+        """ Return the Treeherder log viewer URL for job with `guid`
+        :param project: repository name for the job
+        :param guid: guid of the job
+        """
+        if not self.url or not project or not guid:
+            self.logger.debug(type(self).__name__ + '.request_job_url - '
+                              + 'missing url, project or guid.')
+            return None
+
+        job_api_url = '%s/api/project/%s/jobs/?job_guid=%s' % (self.url,
+                                                               project,
+                                                               guid)
+        response = get_from_treeherder(job_api_url, self.logger)
+
+        job_results = response.get('results')
+        if job_results:
+            job_id = job_results[0].get('id')
+            if job_id:
+                return '%s/logviewer.html#?job_id=%s&repo=%s' % (self.url,
+                                                                 job_id,
+                                                                 project)
+        message = 'job_id for guid %s not found for %s.\n' % (guid, project)
+        message += pretty(response)
+        self.logger.error(message)
+        return None
 
     # based on request_treeherder_revision_hash at
     # https://github.com/mozilla/autophone/blob/master/utils.py
@@ -391,7 +445,7 @@ class TreeherderSubmission(object):
 
             tjc.add(tj)
 
-        self.post_request(project, tjc)
+        self.post_request(project, tjc, j.job_guid)
 
     def submit_running(self, jobs):
         """Submit jobs running notifications to Treeherder
@@ -454,11 +508,7 @@ class TreeherderSubmission(object):
             tj.add_option_collection({'opt': True})
 
             tjc.add(tj)
-
-        #self.logger.debug(type(self).__name__ + '.submit_running: tjc: %s' %
-        #                             tjc.to_json())
-
-        self.post_request(project, tjc)
+        self.post_request(project, tjc, j.job_guid)
 
     def submit_complete(self, jobs):
         """ Submit results to Treeherder, including uploading logs.
@@ -604,7 +654,7 @@ class TreeherderSubmission(object):
             if message:
                 self.logger.info(message)
 
-        self.post_request(project, tjc)
+        self.post_request(project, tjc, j.job_guid)
 
 
 # based on https://github.com/mozilla/autophone/blob/master/options.py
