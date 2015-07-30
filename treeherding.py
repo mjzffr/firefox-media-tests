@@ -10,7 +10,6 @@ import logging
 from platform import node
 import os
 import re
-import tempfile
 import time
 import traceback
 import urlparse
@@ -26,7 +25,7 @@ from s3 import S3Error
 
 logger = logging.getLogger()
 
-releases = {'mozilla-central':'Nightly',
+releases = {'mozilla-central': 'Nightly',
             'mozilla-beta': 'Beta',
             'mozilla-aurora': 'Aurora',
             'mozilla-release': 'Release',
@@ -78,7 +77,7 @@ platforms = [
             'platform': 'osx-10-6',
             'architecture': 'x86_64',
         }
-    }, # ** Windows
+    },  # ** Windows
     {
         'regex': re.compile(r'win(dows)?.*(5|5\.1|xp).*32', re.IGNORECASE),
         'attributes': {
@@ -118,7 +117,7 @@ platforms = [
             'platform': 'windows7-64',
             'architecture': 'x86_64',
         }
-    }, # ** Linux **
+    },  # ** Linux **
     {
         'regex': re.compile(r'(linux|ubuntu).*64', re.IGNORECASE),
         'attributes': {
@@ -136,6 +135,7 @@ platforms = [
         }
     }
 ]
+
 
 def timestamp_now():
     return int(time.mktime(datetime.datetime.now().timetuple()))
@@ -166,9 +166,9 @@ def collect_job_info(job, binary='', installer=''):
         raise ValueError('Missing argument: binary.')
     build = mozversion.get_version(binary=binary)
     machine = mozinfo.info
-    machine_string = build_string =  ' '.join([machine['os'],
-                                               machine['version'],
-                                               str(machine['bits'])])
+    machine_string = build_string = ' '.join([machine['os'],
+                                              machine['version'],
+                                              str(machine['bits'])])
     # Narrow down build architecture; doesn't necessarily match platform
     if installer:
         job.build['package'] = installer
@@ -217,18 +217,18 @@ def upload_file(s3_bucket, key_prefix, filepath, logger, job=None):
         logger.info('Artifact uploaded to %s' % upload_url)
         if job:
             job.job_details.append({
-                    'url': upload_url,
-                    'value': filename,
-                    'content_type': 'link',
-                    'title': 'artifact uploaded'})
+                'url': upload_url,
+                'value': filename,
+                'content_type': 'link',
+                'title': 'artifact uploaded'})
         return upload_url
     except (S3Error, IOError):
         message = 'Failed to upload %s.' % filename
         if job:
             job.job_details.append({
-                    'value': message,
-                    'content_type': 'text',
-                    'title': 'Error'})
+                'value': message,
+                'content_type': 'text',
+                'title': 'Error'})
         logger.exception('\n'.join([message, traceback.format_exc()]))
 
 
@@ -275,15 +275,14 @@ class TreeherderSubmission(object):
             d[attr] = getattr(self, attr)
         return '%s' % d
 
-    def post_request(self, project, job_collection):
-        dump = json.dumps(job_collection.get_collection_data(), indent=4, separators=(',', ': '))
+    def post_request(self, project, job_collection, guid=None):
         self.logger.debug(type(self).__name__ + '.post_request - '
                           'job_collection =\n%s' %
                           pretty(job_collection.get_collection_data()))
 
         auth = TreeherderAuth(self.credentials[project]['consumer_key'],
-                             self.credentials[project]['consumer_secret'],
-                             project)
+                              self.credentials[project]['consumer_secret'],
+                              project)
         client = TreeherderClient(protocol=self.protocol,
                                   host=self.server,
                                   auth=auth)
@@ -315,40 +314,33 @@ class TreeherderSubmission(object):
         :param rev: revision id for the changeset.
         """
         if not self.url or not project or not rev:
-            self.logger.debug(type(self).__name__ + '.request_revision_hash - ' + 'missing url, project or revision.')
+            self.logger.debug(type(self).__name__ +
+                              '.request_revision_hash - ' +
+                              'missing url, project or revision.')
             return None
 
         revurl = '%s/api/project/%s/resultset/?revision=%s' % (
             self.url, project, rev)
-        revision_lookup = requests.get(revurl)
-        message = 'GET: %s ' % revurl
-        self.logger.debug(type(self).__name__ + '.request_revision_hash - ' + message)
+        response = get_from_treeherder(revurl, self.logger)
 
-        if revision_lookup.ok:
-            rev_results = revision_lookup.json().get('results')
-            if rev_results:
-                return rev_results[0].get('revision_hash')
-            else:
-                message = 'Revision %s not found for %s.\n' % (rev, project)
-
-        message += ('Attempt to get Treeherder revision hash failed - \n\n'
-                   'status: %s \n'
-                   'reason: %s \n'
-                   'headers: %s \n'
-                   'body: %s\n' % (revision_lookup.status_code,
-                                 revision_lookup.reason,
-                                 revision_lookup.headers,
-                                 revision_lookup.text))
-        self.logger.error(message)
-        return None
+        rev_results = response.get('results')
+        if rev_results:
+            return rev_results[0].get('revision_hash')
+        else:
+            message = 'Revision %s not found for %s.\n' % (rev, project)
+            message += pretty(response)
+            self.logger.error(message)
+            return None
 
     def submit_pending(self, jobs):
         """Submit jobs pending notifications to Treeherder
         :param jobs: Lists of jobs to be reported. (TestJob)
         """
-        self.logger.debug(type(self).__name__ + '.submit_pending: jobs =\n%s' % jobs)
+        self.logger.debug(type(self).__name__ +
+                          '.submit_pending: jobs =\n%s' % jobs)
         if not self.url or not jobs:
-            self.logger.debug(type(self).__name__ + '.submit_pending: no url/job')
+            self.logger.debug(type(self).__name__ +
+                              '.submit_pending: no url/job')
             return
 
         tjc = TreeherderJobCollection()
@@ -364,9 +356,9 @@ class TreeherderSubmission(object):
             j.submit_timestamp = timestamp_now()
 
             self.logger.info('creating Treeherder job %s for %s %s, '
-                                        'revision_hash: %s' % (
-                                            j.job_guid, j.name, project,
-                                            revision_hash))
+                             'revision_hash: %s' % (j.job_guid,
+                                                    j.name, project,
+                                                    revision_hash))
 
             tj = tjc.get_job()
             tj.add_description(j.description)
@@ -388,8 +380,8 @@ class TreeherderSubmission(object):
             tj.add_end_timestamp(j.submit_timestamp)
             tj.add_build_url(j.build_url)
             tj.add_build_info(j.build['os_name'],
-                             j.build['platform'],
-                             j.build['architecture'])
+                              j.build['platform'],
+                              j.build['architecture'])
             tj.add_machine(j.machine['host'])
             tj.add_machine_info(j.machine['os_name'],
                                 j.machine['platform'],
@@ -398,8 +390,6 @@ class TreeherderSubmission(object):
             tj.add_option_collection({'opt': True})
 
             tjc.add(tj)
-        #self.logger.debug(type(self).__name__ + '.submit_pending: tjc: %s' % (
-        #    tjc.to_json()))
 
         self.post_request(project, tjc)
 
@@ -407,9 +397,11 @@ class TreeherderSubmission(object):
         """Submit jobs running notifications to Treeherder
         :param jobs: Lists of jobs to be reported. (TestJob)
         """
-        self.logger.debug(type(self).__name__ + '.submit_running: jobs =\n%s' % jobs)
+        self.logger.debug(type(self).__name__ +
+                          '.submit_running: jobs =\n%s' % jobs)
         if not self.url or not jobs:
-            self.logger.debug(type(self).__name__ + '.submit_running: no url/job')
+            self.logger.debug(type(self).__name__ +
+                              '.submit_running: no url/job')
             return
 
         tjc = TreeherderJobCollection()
@@ -423,7 +415,7 @@ class TreeherderSubmission(object):
                                   '.submit_running: no revision hash')
                 return
             self.logger.debug(type(self).__name__ + '.submit_running: '
-                                         'for %s %s' % (j.name, project))
+                              'for %s %s' % (j.name, project))
 
             if not j.start_timestamp:
                 j.start_timestamp = timestamp_now()
@@ -475,9 +467,11 @@ class TreeherderSubmission(object):
 
         :param jobs: list of jobs (TestJob).
         """
-        self.logger.debug(type(self).__name__ + '.submit_complete: jobs =\n%s' % jobs)
+        self.logger.debug(type(self).__name__ +
+                          '.submit_complete: jobs =\n%s' % jobs)
         if not self.url or not jobs:
-            self.logger.debug(type(self).__name__ + '.submit_complete: no url/job')
+            self.logger.debug(type(self).__name__ +
+                              '.submit_complete: no url/job')
             return
 
         tjc = TreeherderJobCollection()
@@ -491,7 +485,7 @@ class TreeherderSubmission(object):
                                   '.submit_complete: no revision hash')
                 return
             self.logger.debug(type(self).__name__ + '.submit_complete '
-                                         'for %s %s' % (j.name, project))
+                              'for %s %s' % (j.name, project))
             j.end_timestamp = timestamp_now()
             # A usercancelled job may not have a start_timestamp
             # since it may have been cancelled before it started.
@@ -506,13 +500,15 @@ class TreeherderSubmission(object):
                 if j.test_result.failed == 0:
                     failed = '0'
                 else:
-                    failed = '<em class="testfail">%s</em>' % j.test_result.failed
+                    failed = ('<em class="testfail">%s</em>'
+                              % j.test_result.failed)
 
                 j.job_details.append({
-                    'value': "%s/%s/%s" % (j.test_result.passed, failed, j.test_result.todo),
+                    'value': "%s/%s/%s" % (j.test_result.passed,
+                                           failed, j.test_result.todo),
                     'content_type': 'raw_html',
                     'title': "%s-%s (pass/fail/todo)" % (j.job_name,
-                                                        j.job_symbol)
+                                                         j.job_symbol)
                 })
 
             tj = tjc.get_job()
@@ -541,15 +537,15 @@ class TreeherderSubmission(object):
                               j.build['architecture'])
             tj.add_machine(j.machine['host'])
             tj.add_machine_info(j.machine['os_name'],
-                              j.machine['platform'],
-                              j.machine['architecture'])
+                                j.machine['platform'],
+                                j.machine['architecture'])
             tj.add_option_collection({'opt': True})
 
             # Job details and other artifacts
 
             # Add text_log_summary for each parsed log
             def process_parsed_log(log_file, log_url):
-                log_name =  os.path.basename(log_file)
+                log_name = os.path.basename(log_file)
                 if (not log_url) or (log_file not in j.parsed_logs):
                     return
                 error_lines = [{'line': line, 'linenumber': None} for line in j.parsed_logs[log_file]]
@@ -578,7 +574,9 @@ class TreeherderSubmission(object):
                 }
                 tj.add_artifact('text_log_summary', 'json',
                                 json.dumps(text_log_summary))
-                self.logger.debug(type(self).__name__ + '.submit_complete text_log_summary: %s' % pretty(text_log_summary))
+                self.logger.debug(type(self).__name__ +
+                                  '.submit_complete text_log_summary: %s' %
+                                  pretty(text_log_summary))
 
             # File uploads
             if self.s3_bucket:
@@ -593,8 +591,6 @@ class TreeherderSubmission(object):
                         url = upload_file(self.s3_bucket, prefix, f,
                                           self.logger, j)
                         process_parsed_log(path, url)
-
-
             tj.add_artifact('Job Info', 'json', {'job_details': j.job_details})
             for a in j.artifacts:
                 tj.add_artifact(*a)
@@ -627,7 +623,7 @@ class TreeherderOptions(object):
         self._treeherder_server = ''
         # same format as credentials.json generation by
         # treeherder service
-        self.treeherder_credentials = {} # computed
+        self.treeherder_credentials = {}  # computed
 
     def _parse_treeherder_url(self):
         p = urlparse.urlparse(self.treeherder_url)
@@ -652,8 +648,7 @@ class TreeherderOptions(object):
                      'treeherder_retries',
                      'treeherder_retry_wait',
                      '_treeherder_protocol',
-                     '_treeherder_server',
-                    )
+                     '_treeherder_server',)
         d = {}
         for attr in whitelist:
             d[attr] = getattr(self, attr)
@@ -666,7 +661,7 @@ class TreeherderOptions(object):
 class TestJob(object):
     """ Public job data that is relevant to Treeherder """
     def __init__(self, **kwargs):
-        self.name = '' # internal name
+        self.name = ''  # internal name
         self.job_name = ''
         self.job_symbol = ''
         self.job_guid = str(uuid.uuid4())
@@ -685,7 +680,7 @@ class TestJob(object):
         # List of dicts.
         # May include test results, links to logs, etc.
         self.job_details = []
-        self.artifacts = [] #tuples of name, type, blob
+        self.artifacts = []  # tuples of name, type, blob
         self.build_url = ''
         self.build = {
             'product': 'Firefox',
@@ -718,7 +713,7 @@ class TestJob(object):
         self.reason = ''
         self.description = ''
         self.who = ''
-        self.message = '' # e.g. summary to report alongside test results
+        self.message = ''  # e.g. summary to report alongside test results
         self.parsed_logs = {}
 
     @property
@@ -749,8 +744,7 @@ class TestJob(object):
                      'job_details',
                      'artifacts',
                      'log_files',
-                     'config_files'
-                    )
+                     'config_files')
         d = {}
         for attr in whitelist:
             d[attr] = getattr(self, attr)
@@ -758,4 +752,3 @@ class TestJob(object):
 
     def __repr__(self):
         return self.__str__()
-
