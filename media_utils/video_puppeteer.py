@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import re
-from time import sleep
+from time import clock
 
 from marionette_driver import By, expected, Wait
 
@@ -37,10 +37,33 @@ class VideoPuppeteer(object):
       }
     }"""
 
-    def __init__(self, marionette, url, video_selector='video'):
+    """
+        VideoPuppeteer - Wrapper to control and introspect media elements.
+
+        Inputs:
+            marionette - The marionette instance this runs in.
+            url - the URL of the page containing the video element.
+            video_selector - the selector of the element that we want to
+                watch. This is set by default to 'video', which is what most
+                sites use, but others should work.
+            interval - The polling interval that is used to check progress.
+            set_duration - When set, the polling and checking will stop at the
+                number of seconds specified. Otherwise, this will stop at the
+                end of the video.
+            stall_wait_time - The amount of time to wait to see if a stall has
+                cleared.
+            timeout - The amount of time to wait until the video starts.
+    """
+
+    def __init__(self, marionette, url, video_selector='video', interval=1,
+                 set_duration=None, stall_wait_time=None, timeout=30):
         self.marionette = marionette
         self.test_url = url
-        wait = Wait(self.marionette, timeout=30)
+        self.interval = interval
+        self.stall_wait_time = stall_wait_time
+        self.timeout = timeout
+
+        wait = Wait(self.marionette, timeout=self.timeout)
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.test_url)
             self.marionette.execute_script("""
@@ -56,7 +79,12 @@ class VideoPuppeteer(object):
                                                           'Using first.')
             if len(videos_found) > 0:
                 self.video = videos_found[0]
-                self.marionette.execute_script("log('video element obtained');")
+                self.marionette.execute_script(
+                    "log('video element obtained');")
+                self._start_time = self.current_time
+                self._start_wall_time = clock()
+                self._set_duration = set_duration
+                self._calculated_duration = None
 
     def get_debug_lines(self):
         with self.marionette.using_context('chrome'):
@@ -72,13 +100,22 @@ class VideoPuppeteer(object):
     @property
     def duration(self):
         """ Return duration in seconds. """
-        return self.execute_video_script('return arguments[0].'
-                                         'wrappedJSObject.duration;') or 0
+        if self._calculated_duration:
+            return self._calculated_duration
+
+        video_duration = self.execute_video_script(
+            'return arguments[0].wrappedJSObject.duration;') or 0
+        if self._set_duration > 0 and self._set_duration < video_duration:
+            self._calculated_duration = self._set_duration
+        else:
+            self._calculated_duration = video_duration
+
+        return self._calculated_duration
 
     @property
     def current_time(self):
-        return self.execute_video_script('return arguments[0].'
-                                         'wrappedJSObject.currentTime;') or 0
+        return self.execute_video_script(
+            'return arguments[0].wrappedJSObject.currentTime;') or 0
 
     @property
     def remaining_time(self):
@@ -111,6 +148,12 @@ class VideoPuppeteer(object):
     def video_url(self):
         return self.execute_video_script('return arguments[0].baseURI;')
 
+    @property
+    def lag(self):
+        elapsed_current_time = self.current_time - self._start_time
+        elapsed_wall_time = clock() - self._start_wall_time
+        return elapsed_wall_time - elapsed_current_time
+
     def measure_progress(self):
         initial = self.current_time
         sleep(1)
@@ -133,6 +176,7 @@ class VideoPuppeteer(object):
             messages += ['\t(video)',
                          '\tcurrent_time: {0},'.format(self.current_time),
                          '\tduration: {0},'.format(self.duration),
+                         '\tlag: {0},'.format(self.lag),
                          '\turl: {0}'.format(self.video_url),
                          '\tsrc: {0}'.format(self.video_src),
                          '\tframes total: {0}'.format(self.total_frames),
@@ -150,49 +194,25 @@ class VideoException(Exception):
 
 def playback_started(video):
     try:
-        return video.current_time > 0
+        return video.current_time > video._start_time
     except Exception as e:
         print ('Got exception %s' % e)
         return False
 
-# Debug info looks something like:
-# Dumping data for reader d10c000:
-#  Dumping Audio Track Decoders: - mLastAudioTime: 9.386666
-#   Reader 0: d2df400 ranges=[(0.000000, 16.042666)] active=true size=196456
-#  Dumping Video Track Decoders - mLastVideoTime: 8.466791
-#	 Reader 2: 13f54400 ranges=[(8.008000, 16.016000)] active=true size=3741917
-#	 Reader 1: d2edc00 ranges=[(4.004000, 8.008000)] active=false size=1088692
-#	 Reader 0: d2eac00 ranges=[(2.002000, 4.004000)] active=false size=242367
-
-# One simple hack: There should be two active readers at any one time. If
-# there are not exactly two, something is horribly wrong.
-
 
 def playback_done(video):
-    active_re = re.compile('active=true', re.DOTALL)
-
     # If we are near the end and there is still a video element, then
-    # we are essentially done. Any further progress might set on of
-    # the stream active state to false, and we will raise in that
-    # case inappropriately.
-
-    if abs(video.remaining_time) < 2.0:
+    # we are essentially done. If this happens to be last time we are polled
+    # before the video ends, we won't get another chance.
+    remaining_time = video.remaining_time
+    if abs(remaining_time) < video.interval:
         return True
 
-    # Now, parse out playing info. If there is no debug info, then the
-    # video element has disappeared somehow, and that' a problem.
-    # Otherwise, there should be one active video and one active audio
-    # stream. (TODO: what if there are multiple tabs with video content?)
-    # If not, there is a problem. Past this point, the video is
-    # either still playing or there is a problem, so this will never
-    # return True.
+    # Check to see if the video has stalled. Accumulate the amount of lag
+    # since the video started, and if it is too high, then raise.
+    if video.stall_wait_time and (video.lag > video.stall_wait_time):
+        raise VideoException('Video %s stalled.\n%s' % (video.url, video))
 
-    debug_lines = video.get_debug_lines()
-    if debug_lines is not None:
-        num_active = len(active_re.findall(' '.join(debug_lines)))
-        if num_active == 2:
-            return False
+    # We are cruising, so we are not done.
 
-    raise VideoException('Did not find exactly one audio and one video '
-                         'active reader - %s'
-                         % video)
+    return False
