@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import re
-from time import clock
+from time import clock, sleep
 
 from marionette_driver import By, expected, Wait
 
