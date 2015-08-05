@@ -41,6 +41,7 @@ class TestBasicYouTubePlayback(MediaTestCase):
     def test_video_playing_in_one_tab(self):
         with self.marionette.using_context('content'):
             for url in self.test_urls:
+                self.logger.info(url)
                 youtube = YouTubePuppeteer(self.marionette, url)
                 youtube.deactivate_autoplay()
                 final_piece = 60
