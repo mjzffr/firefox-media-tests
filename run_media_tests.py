@@ -47,7 +47,7 @@ treeherding_config_options = [
     [["--no-treeherding"],
      {"action": "store_true",
       "dest": "treeherding_off",
-      "default": False, # i.e. Treeherding is on by default
+      "default": False,  # i.e. Treeherding is on by default
       "help": "Disable submission to Treeherder",
       }],
     [["--job-name"],
@@ -77,6 +77,7 @@ treeherding_config_options = [
       "help": "Path to credentials json file",
       }],
 ]
+
 
 class JobResultParser(TestSummaryOutputParserHelper):
     """ Parses test output to determine overall result."""
@@ -129,9 +130,9 @@ class TreeherdingMixin(object):
     def __init__(self, *args, **kwargs):
         super(TreeherdingMixin, self).__init__(*args, **kwargs)
         # instantiate after virtualenv is created
-        self.treeherder = None # TreeherderSubmission
-        self.job = None # TestJob
-        self.job_result_parser = None # JobResultParser
+        self.treeherder = None  # TreeherderSubmission
+        self.job = None  # TestJob
+        self.job_result_parser = None  # JobResultParser
         if self.config['treeherding_off']:
             return
         self.register_virtualenv_module('boto', method='pip',
@@ -143,7 +144,6 @@ class TreeherdingMixin(object):
                                         method='pip', optional=True)
         self.register_virtualenv_module('mozversion',
                                         method='pip', optional=True)
-
 
     @PostScriptAction('create-virtualenv')
     def setup_treeherding(self, action, success=None):
@@ -159,7 +159,6 @@ class TreeherdingMixin(object):
             # mozharness script. (We want to work in exactly one venv and that
             # venv should be created by mozharness. We don't want a mozharness
             # venv within a venv created externally.)
-            from s3 import S3Bucket
             from treeherding import TreeherderSubmission, TestJob
             options = self._get_treeherder_options()
             s3_bucket = self._get_s3_bucket()
@@ -249,7 +248,6 @@ class TreeherdingMixin(object):
             self.warning("Unable to init job data (build, machine): %s" %
                          traceback.format_exc())
 
-
     def submit_treeherder_running(self):
         """ Submit job to Treeherder with status "running".
         Prerequisite: job should be populated with basic info like
@@ -280,6 +278,7 @@ class TreeherdingMixin(object):
             self.info("Treeherding is off or not set up; nothing to do.")
             return
         self.treeherder.submit_complete([self.job])
+
 
 class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
     error_list = [
@@ -348,7 +347,6 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
           }],
     ] + (copy.deepcopy(testing_config_options) +
          copy.deepcopy(treeherding_config_options))
-
 
     def __init__(self):
         super(FirefoxMediaTest, self).__init__(
@@ -467,7 +465,7 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             suite_categories = suite_categories or ['common']
             self._download_test_packages(suite_categories, target_unzip_dirs)
 
-        #self._read_tree_config()
+        # self._read_tree_config()
         self._download_installer()
         if self.config.get('download_symbols'):
             self._download_and_extract_symbols()
@@ -537,11 +535,12 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             return
         super(FirefoxMediaTest, self).setup_treeherding(action, success)
         from treeherding import TestJob
+
         class JenkinsJob(TestJob):
             def __init__(self, **kwargs):
                 super(JenkinsJob, self).__init__(**kwargs)
-                self.jenkins_build_tag = '' # computed
-                self.jenkins_build_url = '' # computed
+                self.jenkins_build_tag = ''  # computed
+                self.jenkins_build_url = ''  # computed
 
             @property
             def unique_s3_prefix(self):

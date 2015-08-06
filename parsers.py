@@ -8,9 +8,7 @@ import os
 import logging
 import traceback
 
-#import datetime
-#import json
-
+logging.basicConfig()
 logger = logging.getLogger()
 
 BUSTED = 'busted'
@@ -18,6 +16,7 @@ TESTFAILED = 'testfailed'
 UNKNOWN = 'unknown'
 EXCEPTION = 'exception'
 SUCCESS = 'success'
+
 
 # from https://github.com/mozilla/treeherder/blob/master/treeherder/log_parser/parsers.py
 class ParserBase(object):
@@ -46,6 +45,7 @@ class ParserBase(object):
         """By default, just return the artifact as-is."""
         return self.artifact
 
+
 class MozharnessStepParser(ParserBase):
     """
     Parse mozharness steps.
@@ -55,7 +55,8 @@ class MozharnessStepParser(ParserBase):
     2015-07-16 06:27:55  INFO - ##### Running clobber step.    <-- start
     2015-07-16 06:27:55  INFO - #####
     ...
-    2015-07-16 06:27:58  INFO - ##### Finished clobber step. Success: True  <-- end
+    2015-07-16 06:27:58  INFO - ##### Finished clobber step. Success: True
+    ^ end
     ...
     2015-07-16 06:28:58  INFO - #####
     2015-07-16 06:28:58  INFO - ##### Skipping install step.   <-- start
@@ -94,30 +95,30 @@ class MozharnessStepParser(ParserBase):
                                                                  SUCCESS,
                                                                  UNKNOWN)
     RE_STEP_START = re.compile(''.join([
-                                            r'#{5} Running ',
-                                            STEP_PATTERN
-                    ]))
+        r'#{5} Running ',
+        STEP_PATTERN
+    ]))
     RE_STEP_END = re.compile(''.join([
-                                        r'#{5} Finished ',
-                                        STEP_PATTERN,
-                                        ' ',
-                                        SUCCESS_PATTERN,
-                                        '$'
-                  ]))
+        r'#{5} Finished ',
+        STEP_PATTERN,
+        ' ',
+        SUCCESS_PATTERN,
+        '$'
+    ]))
     RE_TEST_END = re.compile(''.join([
-                                        r'#{5} Finished ',
-                                        STEP_PATTERN,
-                                        ' ',
-                                        SUCCESS_PATTERN,
-                                        ' - ',
-                                        RESULT_PATTERN,
-                                        '$'
-                  ]))
+        r'#{5} Finished ',
+        STEP_PATTERN,
+        ' ',
+        SUCCESS_PATTERN,
+        ' - ',
+        RESULT_PATTERN,
+        '$'
+    ]))
     RE_SKIP_START = re.compile(''.join([
-                                            r'#{5} Skipping ',
-                                            STEP_PATTERN,
-                                            '$'
-                  ]))
+        r'#{5} Skipping ',
+        STEP_PATTERN,
+        '$'
+    ]))
     RE_SKIP_END = re.compile(r'#{5}$')
 
     def __init__(self):
@@ -232,7 +233,7 @@ class MozharnessStepParser(ParserBase):
         time_format = '%Y-%m-%d %H:%M:%S'
         start = datetime.datetime.strptime(started, time_format)
         finish = datetime.datetime.strptime(finished, time_format)
-        delta = max(start,finish) - min(start,finish)
+        delta = max(start, finish) - min(start, finish)
         return delta.total_seconds()
 
 
@@ -324,7 +325,6 @@ def parse_log(log_file, log_url):
 if __name__ == '__main__':
     import json
     import sys
-    logging.basicConfig()
     if len(sys.argv) > 1:
         log_file = sys.argv[1]
     else:
