@@ -15,7 +15,10 @@ class TestVideoPlayback(MediaTestCase):
     """ Test MSE playback in HTML5 video element.
 
     These tests should pass on any site where a single video element plays
-    upon loading and is uninterrupted (by ads, for example)
+    upon loading and is uninterrupted (by ads, for example).
+
+    This test both starting videos and performing partial playback at one
+    minute each, and is the test that should be run frequently in automation.
     """
 
     def test_playback_starts(self):
@@ -38,6 +41,3 @@ class TestVideoPlayback(MediaTestCase):
 
     def test_video_playback_partial(self):
         self.run_playback(set_duration=60)
-
-    def test_video_playback_full(self):
-        self.run_playback()
