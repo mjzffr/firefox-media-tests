@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from time import sleep
-from re import compile
+import re
 from json import loads
 
 from marionette_driver import By, expected, Wait
@@ -30,7 +30,7 @@ class YouTubePuppeteer(VideoPuppeteer):
 
     _yt_player_state_name = {v: k for k, v in _yt_player_state.items()}
 
-    _time_pattern = compile('(?P<minute>\d+):(?P<second>\d+)')
+    _time_pattern = re.compile('(?P<minute>\d+):(?P<second>\d+)')
 
     def __init__(self, marionette, url):
         super(YouTubePuppeteer,

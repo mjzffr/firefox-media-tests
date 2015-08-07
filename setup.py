@@ -4,19 +4,37 @@
 
 from setuptools import setup, find_packages
 
-PACKAGE_VERSION = '0.1'
+PACKAGE_VERSION = '0.2'
+
+deps = [
+    'marionette-client == 0.18',
+    'marionette-driver == 0.12',
+    'mozlog == 3.0',
+]
 
 setup(name='firefox-media-tests',
       version=PACKAGE_VERSION,
       description=('A collection of Mozilla Firefox media playback tests run '
                    'with Marionette'),
+      classifiers=[
+          'Environment :: Console',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
+          'Natural Language :: English',
+          'Operating System :: OS Independent',
+          'Programming Language :: Python',
+          'Topic :: Software Development :: Libraries :: Python Modules',
+      ],
       keywords='mozilla',
       author='Mozilla Automation and Tools Team',
       author_email='tools@lists.mozilla.org',
+      url='https://github.com/mjzffr/firefox-media-tests',
       license='MPL 2.0',
       packages=find_packages(),
+      zip_safe=False,
+      install_requires=deps,
       include_package_data=True,
       entry_points="""
         [console_scripts]
-        firefox-media-tests = media_test_harness:run
+        firefox-media-tests = media_test_harness:cli
     """)

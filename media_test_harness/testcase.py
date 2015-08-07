@@ -59,8 +59,8 @@ class MediaTestCase(FirefoxTestCase):
 
                 try:
                     verbose_until(Wait(video, interval=interval,
-                                       timeout=video.duration * 1.3
-                                       + stall_wait_time),
+                                       timeout=video.duration * 1.3 +
+                                       stall_wait_time),
                                   video, playback_done)
                 except VideoException as e:
                     raise self.failureException(e)
