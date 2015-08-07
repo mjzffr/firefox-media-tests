@@ -601,7 +601,7 @@ class TreeherderSubmission(object):
                     return
                 tj.add_log_reference(log_name, log_url, parse_status='parsed')
                 # NOTE must have started_linenumber < finished_linenumber
-                text_log_summary = parse_log(log_file, log_url)
+                text_log_summary = parse_log(log_file, log_url, self.logger)
                 tj.add_artifact('text_log_summary', 'json',
                                 json.dumps(text_log_summary))
                 self.logger.debug(type(self).__name__ +

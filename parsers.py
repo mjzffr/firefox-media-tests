@@ -5,11 +5,7 @@
 import datetime
 import re
 import os
-import logging
 import traceback
-
-logging.basicConfig()
-logger = logging.getLogger()
 
 BUSTED = 'busted'
 TESTFAILED = 'testfailed'
@@ -303,7 +299,7 @@ class LogViewArtifactBuilder(object):
         return self.artifact
 
 
-def parse_log(log_file, log_url):
+def parse_log(log_file, log_url, logger):
     """
     Build text_log_summary artifact by running each parser on each line.
 
@@ -316,6 +312,7 @@ def parse_log(log_file, log_url):
         with open(log_file, 'r') as f:
             for line in f:
                 logview_builder.parse_line(line)
+        raise Exception
     except Exception:
         message = 'Failed to parse log file: %s' % log_file
         logger.exception('\n'.join([message, traceback.format_exc()]))
@@ -325,9 +322,12 @@ def parse_log(log_file, log_url):
 if __name__ == '__main__':
     import json
     import sys
+    import logging
+    logging.basicConfig()
+    logger = logging.getLogger()
     if len(sys.argv) > 1:
         log_file = sys.argv[1]
     else:
         log_file = 'sample_data.ignore/log_info_1.log'
-    artifact = parse_log(log_file, 'some url')
+    artifact = parse_log(log_file, 'some url', logger)
     print json.dumps(artifact, indent=4, separators=(',', ': '))
