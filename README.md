@@ -2,7 +2,7 @@ firefox-media-tests
 ===================
 [![Code Health](https://landscape.io/github/mjzffr/firefox-media-tests/master/landscape.png)](https://landscape.io/github/mjzffr/firefox-media-tests/master)
 
-[Marionette Python tests][marionette-python-tests] for media playback in Mozilla Firefox. Uses [Firefox Puppeteer][ff-puppeteer-docs] library and parts of the test harness from [firefox-ui-tests][firefox_ui_tests].
+[Marionette Python tests][marionette-python-tests] for media playback in Mozilla Firefox. MediaTestCase uses [Firefox Puppeteer][ff-puppeteer-docs] library.
 
 Setup
 -----
