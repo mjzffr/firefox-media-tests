@@ -345,6 +345,11 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
           "default": None,
           "help": r"Default: '%H:%M:%S'",
           }],
+        [["--e10s"],
+         {"dest": "e10s",
+          "action": "store_true",
+          "default": False,
+          "help": "Enable e10s when running marionette tests."}],
     ] + (copy.deepcopy(testing_config_options) +
          copy.deepcopy(treeherding_config_options))
 
@@ -389,6 +394,7 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         self.test_timeout = int(c.get('test_timeout'))
         self.tests = c.get('tests')
         self.media_logs = set(['gecko.log'])
+        self.e10s = c.get('e10s')
 
     # Allow config to set log_date_format
     def new_log_obj(self, default_log_level="info"):
@@ -485,6 +491,8 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             cmd += ['--profile', self.profile]
         if self.tests:
             cmd.append(self.tests)
+        if self.e10s:
+            cmd.append('--e10s')
         # configure logging
         dirs = self.query_abs_dirs()
         log_dir = dirs['abs_log_dir']
