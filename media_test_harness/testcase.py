@@ -5,6 +5,7 @@
 import os
 
 from marionette_driver import Wait
+from marionette_driver.errors import TimeoutException
 from marionette.marionette_test import SkipTest
 
 from firefox_ui_harness import FirefoxTestCase
@@ -37,24 +38,25 @@ class MediaTestCase(FirefoxTestCase):
             if debug_lines:
                 self.marionette.log('\n'.join(debug_lines))
 
-    def run_playback(self, interval=1, set_duration=None,
-                     stall_wait_time=10):
+    def run_playback(self, video):
         with self.marionette.using_context('content'):
-            for url in self.video_urls:
-                self.logger.info(url)
-                video = VP(self.marionette, url, interval=interval,
-                           set_duration=set_duration,
-                           stall_wait_time=stall_wait_time)
-                verbose_until(Wait(video, timeout=30), video,
-                              playback_started)
+            self.logger.info(video.test_url)
+            try:
+                verbose_until(Wait(video, interval=video.interval,
+                                   timeout=video.expected_duration * 1.3 +
+                                   video.stall_wait_time),
+                              video, playback_done)
+            except VideoException as e:
+                raise self.failureException(e)
 
-                try:
-                    verbose_until(Wait(video, interval=interval,
-                                       timeout=video.duration * 1.3 +
-                                       stall_wait_time),
-                                  video, playback_done)
-                except VideoException as e:
-                    raise self.failureException(e)
+    def check_playback_starts(self, video):
+        with self.marionette.using_context('content'):
+            self.logger.info(video.test_url)
+            try:
+                verbose_until(Wait(video, timeout=video.timeout),
+                              video, playback_started)
+            except TimeoutException as e:
+                raise self.failureException(e)
 
     def skipTest(self, reason):
         """

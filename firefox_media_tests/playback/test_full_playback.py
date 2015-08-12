@@ -4,6 +4,7 @@
 
 
 from media_test_harness.testcase import MediaTestCase
+from media_utils.video_puppeteer import VideoPuppeteer
 
 
 class TestFullPlayback(MediaTestCase):
@@ -16,4 +17,8 @@ class TestFullPlayback(MediaTestCase):
     """
 
     def test_video_playback_full(self):
-        self.run_playback()
+        with self.marionette.using_context('content'):
+            for url in self.video_urls:
+                video = VideoPuppeteer(self.marionette, url,
+                                       stall_wait_time=10)
+                self.run_playback(video)

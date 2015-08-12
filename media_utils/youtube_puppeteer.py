@@ -32,10 +32,11 @@ class YouTubePuppeteer(VideoPuppeteer):
 
     _time_pattern = re.compile('(?P<minute>\d+):(?P<second>\d+)')
 
-    def __init__(self, marionette, url):
+    def __init__(self, marionette, url, **kwargs):
         super(YouTubePuppeteer,
               self).__init__(marionette, url,
-                             video_selector='#movie_player video')
+                             video_selector='#movie_player video',
+                             **kwargs)
         wait = Wait(self.marionette, timeout=30)
         with self.marionette.using_context('content'):
             verbose_until(wait, self,
@@ -43,6 +44,16 @@ class YouTubePuppeteer(VideoPuppeteer):
             self.player = self.marionette.find_element(By.ID, 'movie_player')
             self.marionette.execute_script("log('#movie_player "
                                            "element obtained');")
+        # When an ad is playing, self.player_duration indicates the duration
+        # of the spliced-in ad stream, not the duration of the main video, so
+        # we attempt to skip the ad first.
+        for attempt in range(5):
+            sleep(1)
+            self.process_ad()
+            if (self.ad_inactive and self.duration and not
+                    self.player_buffering):
+                break
+        self.update_expected_duration()
 
     def player_play(self):
         """ Play via YouTube API. """
@@ -55,9 +66,6 @@ class YouTubePuppeteer(VideoPuppeteer):
     @property
     def player_duration(self):
         """ Duration in seconds via YouTube API.
-
-        This always describes the target YouTube video. It does not necessarily
-        describe the HTML video element, which may have ad playing in it.
         """
         return self.execute_yt_script('return arguments[1].'
                                       'wrappedJSObject.getDuration();')
@@ -65,9 +73,6 @@ class YouTubePuppeteer(VideoPuppeteer):
     @property
     def player_current_time(self):
         """ Current time in seconds via YouTube API.
-
-        This always describes the target YouTube video. It does not necessarily
-        describe the HTML video element, which may have ad playing in it.
         """
         return self.execute_yt_script('return arguments[1].'
                                       'wrappedJSObject.getCurrentTime();')
@@ -75,17 +80,11 @@ class YouTubePuppeteer(VideoPuppeteer):
     @property
     def player_remaining_time(self):
         """ Remaining time in seconds via YouTube API.
-
-        This always describes the target YouTube video. It does not necessarily
-        describe the HTML video element, which may have ad playing in it.
         """
-        return self.player_duration - self.player_current_time
+        return self.expected_duration - self.player_current_time
 
     def player_measure_progress(self):
         """ Playback progress in seconds via YouTube API.
-
-        This always describes the target YouTube video. It does not necessarily
-        describe the HTML video element, which may have ad playing in it.
         """
         initial = self.player_current_time
         sleep(1)
@@ -218,13 +217,8 @@ class YouTubePuppeteer(VideoPuppeteer):
 
     @property
     def ad_inactive(self):
-        # TODO what about ad 'NOT_STARTED'
-        # `player_current_time` stands still while ad is playing
-        if self.player_current_time > 0 or self.player_playing:
-            return (self.player_measure_progress() > 0 or
-                    self.ad_state == self._yt_player_state['ENDED'])
-        else:
-            return self.ad_state == self._yt_player_state['ENDED']
+        return (self.ad_ended or
+                self.ad_state == self._yt_player_state['UNSTARTED'])
 
     @property
     def ad_playing(self):
@@ -235,12 +229,9 @@ class YouTubePuppeteer(VideoPuppeteer):
         return self.ad_state == self._yt_player_state['ENDED']
 
     def process_ad(self):
-        if self.attempt_ad_skip():
+        if self.attempt_ad_skip() or self.ad_inactive:
             return
-        ad_duration = self.search_ad_duration()
-        if not ad_duration:
-            return
-        ad_timeout = ad_duration + 5
+        ad_timeout = (self.search_ad_duration() or 30) + 5
         wait = Wait(self, timeout=ad_timeout, interval=1)
         try:
             self.marionette.log('process_ad: waiting %s s for ad' % ad_timeout)
@@ -255,7 +246,8 @@ class YouTubePuppeteer(VideoPuppeteer):
         Return True if clicking of ad-skip button occurred.
         """
         # Wait for ad to load and become skippable
-        if self.ad_playing or self.player_measure_progress() == 0:
+        if self.ad_playing:
+            self.marionette.log('Waiting while ad plays')
             sleep(10)
         else:
             # no ad playing
@@ -410,8 +402,8 @@ def playback_done(yt):
     # in case ad plays at end of video
     if yt.ad_state == yt._yt_player_state['PLAYING']:
         yt.attempt_ad_skip()
-    done = yt.player_ended or yt.player_remaining_time < 1
-    return done
+        return False
+    return yt.player_ended or yt.player_remaining_time < 1
 
 
 def wait_for_almost_done(yt, final_piece=120):
@@ -426,20 +418,7 @@ def wait_for_almost_done(yt, final_piece=120):
     :param yt: YouTubePuppeteer
     """
     rest = 10
-    retries = 5
-    duration = remaining_time = 0
-
-    # using yt.player_duration is crucial, since yt.duration might be the
-    # duration of an ad (in the video element) rather than of target video
-    # Nevertheless, it's still possible to get a duration of 0, depending on
-    # ad behaviour, so try to skip over initial ad
-    for attempt in range(retries):
-        yt.process_ad()
-        duration = remaining_time = yt.player_duration
-        if duration > 5 and not yt.ad_playing:
-            break
-        else:
-            sleep(1)
+    duration = remaining_time = yt.expected_duration
     if duration < final_piece:
         # video is short so don't attempt to skip more ads
         return duration
@@ -464,7 +443,7 @@ def wait_for_almost_done(yt, final_piece=120):
             sleep(rest)
         else:
             sleep(rest/2)
-        # using yt.player_duration is crucial, since yt.duration might be the
-        # duration of an ad (in the video element) rather than of target video
+        # TODO during an ad, remaining_time will be based on ad's current_time
+        # rather than current_time of target video
         remaining_time = yt.player_remaining_time
     return remaining_time
