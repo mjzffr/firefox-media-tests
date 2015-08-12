@@ -9,35 +9,31 @@ from marionette_driver import By, expected, Wait
 from firefox_media_tests.utils import verbose_until
 
 
+# Adapted from
+# https://github.com/gavinsharp/aboutmedia/blob/master/chrome/content/aboutmedia.xhtml
+debug_script = """
+var mainWindow = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+    .getInterface(Components.interfaces.nsIWebNavigation)
+    .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+    .rootTreeItem
+    .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+    .getInterface(Components.interfaces.nsIDOMWindow);
+var tabbrowser = mainWindow.gBrowser;
+for (var i=0; i < tabbrowser.browsers.length; ++i) {
+  var b = tabbrowser.getBrowserAtIndex(i);
+  var media = b.contentDocumentAsCPOW.getElementsByTagName('video');
+  for (var j=0; j < media.length; ++j) {
+     var ms = media[j].mozMediaSourceObject;
+     if (ms) {
+       debugLines = ms.mozDebugReaderData.split(\"\\n\");
+       return debugLines;
+     }
+  }
+}"""
+
 class VideoPuppeteer(object):
     """
-    Wrapper around HTML5 video element
-    """
-
-    # Adapted from
-    # https://github.com/gavinsharp/aboutmedia/blob/master/chrome/content/aboutmedia.xhtml
-    _debug_script = """
-    var mainWindow = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-        .getInterface(Components.interfaces.nsIWebNavigation)
-        .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
-        .rootTreeItem
-        .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-        .getInterface(Components.interfaces.nsIDOMWindow);
-    var tabbrowser = mainWindow.gBrowser;
-    for (var i=0; i < tabbrowser.browsers.length; ++i) {
-      var b = tabbrowser.getBrowserAtIndex(i);
-      var media = b.contentDocumentAsCPOW.getElementsByTagName('video');
-      for (var j=0; j < media.length; ++j) {
-         var ms = media[j].mozMediaSourceObject;
-         if (ms) {
-           debugLines = ms.mozDebugReaderData.split(\"\\n\");
-           return debugLines;
-         }
-      }
-    }"""
-
-    """
-        VideoPuppeteer - Wrapper to control and introspect media elements.
+        VideoPuppeteer - Wrapper to control and introspect HTML5 video elements.
 
         Inputs:
             marionette - The marionette instance this runs in.
@@ -53,7 +49,6 @@ class VideoPuppeteer(object):
                 cleared.
             timeout - The amount of time to wait until the video starts.
     """
-
     def __init__(self, marionette, url, video_selector='video', interval=1,
                  set_duration=None, stall_wait_time=None, timeout=30):
         self.marionette = marionette
@@ -87,7 +82,7 @@ class VideoPuppeteer(object):
 
     def get_debug_lines(self):
         with self.marionette.using_context('chrome'):
-            debug_lines = self.marionette.execute_script(self._debug_script)
+            debug_lines = self.marionette.execute_script(debug_script)
         return debug_lines
 
     def play(self):

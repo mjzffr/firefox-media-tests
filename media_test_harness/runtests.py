@@ -6,12 +6,13 @@ from manifestparser import read_ini
 import os
 import sys
 
-import mozlog
 from marionette import BaseMarionetteTestRunner, BaseMarionetteOptions
 from marionette.marionette_test import MarionetteTestCase
+import mozlog
 
 import firefox_media_tests
 from testcase import MediaTestCase
+from media_utils.video_puppeteer import debug_script
 
 DEFAULT_PREFS = {
     'app.update.auto': False,
@@ -101,6 +102,26 @@ class MediaTestRunner(BaseMarionetteTestRunner):
             self.server_root = firefox_media_tests.resources
         self.prefs.update(DEFAULT_PREFS)
         self.test_handlers = [MediaTestCase]
+
+        # Used in HTML report (--log-html)
+        def gather_media_debug(test, status):
+            rv = {}
+            marionette = test._marionette_weakref()
+
+            if marionette.session is not None:
+                try:
+                    with marionette.using_context(marionette.CONTEXT_CHROME):
+                        debug_lines = marionette.execute_script(debug_script)
+                        if debug_lines:
+                            name = 'mozMediaSourceObject.mozDebugReaderData'
+                            rv[name] = '\n'.join(debug_lines)
+                except:
+                    logger = mozlog.get_default_logger()
+                    logger.warning('Failed to gather test failure media debug',
+                                   exc_info=True)
+            return rv
+
+        self.result_callbacks.append(gather_media_debug)
 
 
 def startTestRunner(runner_class, options, tests):

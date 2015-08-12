@@ -5,6 +5,7 @@
 import os
 
 from marionette_driver import Wait
+from marionette.marionette_test import SkipTest
 
 from firefox_ui_harness import FirefoxTestCase
 from firefox_media_tests.utils import (timestamp_now, verbose_until)
@@ -17,16 +18,6 @@ class MediaTestCase(FirefoxTestCase):
     def __init__(self, *args, **kwargs):
         self.video_urls = kwargs.pop('video_urls', False)
         FirefoxTestCase.__init__(self, *args, **kwargs)
-
-    @property
-    def failureException(self):
-        class MediaFailureException(AssertionError):
-            def __init__(self_, *args, **kwargs):
-                self.save_screenshot()
-                self.log_video_debug_lines()
-                super(MediaFailureException, self_).__init__(*args, **kwargs)
-        MediaFailureException.__name__ = AssertionError.__name__
-        return MediaFailureException
 
     def save_screenshot(self):
         screenshot_dir = 'screenshots'
@@ -64,3 +55,12 @@ class MediaTestCase(FirefoxTestCase):
                                   video, playback_done)
                 except VideoException as e:
                     raise self.failureException(e)
+
+    def skipTest(self, reason):
+        """
+        Skip this test.
+
+        Skip with marionette.marionette_test import SkipTest so that it
+        gets recognized a skip in marionette.marionette_test.CommonTestCase.run
+        """
+        raise SkipTest(reason)
