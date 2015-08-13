@@ -94,13 +94,15 @@ class VideoPuppeteer(object):
     @property
     def duration(self):
         """ Return duration in seconds. """
-        if self._calculated_duration:
+        if self._calculated_duration and self._calculated_duration > 0:
             return self._calculated_duration
 
         video_duration = self.execute_video_script(
             'return arguments[0].wrappedJSObject.duration;') or 0
-        if self._set_duration > 0 and self._set_duration < video_duration:
-            self._calculated_duration = self._set_duration
+        if self._set_duration:
+            set_duration = self._set_duration + self._start_time
+        if self._set_duration and set_duration > 0 and set_duration < video_duration:
+            self._calculated_duration = set_duration
         else:
             self._calculated_duration = video_duration
 
@@ -148,6 +150,25 @@ class VideoPuppeteer(object):
         elapsed_wall_time = clock() - self._start_wall_time
         return elapsed_wall_time - elapsed_current_time
 
+    def complete_setup_after_video_starts(self):
+        '''
+        Note that Netflix videos don't start at zero by default, and
+        current_time does not get set until it does start.
+
+        self._calculated_duration gets set to the duration or a value
+        dependent on current_time. current_time is zero until
+        netflix starts playing, and then it gets set to where
+        the video was playing. So once we figure out that we were
+        not at the beginning, we need to recalculate this value.
+        '''
+        if self._start_time == 0:
+            self._start_time = self.current_time
+
+            if self._calculated_duration:
+                self._calculated_duration = 0
+            self._start_wall_time = clock()
+
+
     def measure_progress(self):
         initial = self.current_time
         sleep(1)
@@ -188,7 +209,11 @@ class VideoException(Exception):
 
 def playback_started(video):
     try:
-        return video.current_time > video._start_time
+        if video.current_time > video._start_time:
+            video.complete_setup_after_video_starts()
+            return True;
+        else:
+            return False;
     except Exception as e:
         print ('Got exception %s' % e)
         return False
@@ -205,7 +230,7 @@ def playback_done(video):
     # Check to see if the video has stalled. Accumulate the amount of lag
     # since the video started, and if it is too high, then raise.
     if video.stall_wait_time and (video.lag > video.stall_wait_time):
-        raise VideoException('Video %s stalled.\n%s' % (video.url, video))
+        raise VideoException('Video %s stalled.\n%s' % (video.video_url, video))
 
     # We are cruising, so we are not done.
 
