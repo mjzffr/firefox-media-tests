@@ -41,7 +41,12 @@ from mozharness.base.script import (BaseScript, PreScriptAction,
 from mozharness.mozilla.testing.testbase import (TestingMixin,
                                                  testing_config_options)
 from mozharness.mozilla.testing.unittest import TestSummaryOutputParserHelper
-from parsers import BUSTED, TESTFAILED, UNKNOWN, EXCEPTION, SUCCESS
+
+BUSTED = 'busted'
+TESTFAILED = 'testfailed'
+UNKNOWN = 'unknown'
+EXCEPTION = 'exception'
+SUCCESS = 'success'
 
 treeherding_config_options = [
     [["--no-treeherding"],
