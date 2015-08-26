@@ -63,12 +63,16 @@ class VideoPuppeteer(object):
         self.interval = interval
         self.stall_wait_time = stall_wait_time
         self.timeout = timeout
+        self._set_duration = set_duration
+        self.video = None
+        self.expected_duration = 0
+        self._start_time = 0
+        self._start_wall_time = 0
         wait = Wait(self.marionette, timeout=self.timeout)
         with self.marionette.using_context('content'):
             self.marionette.navigate(self.test_url)
             self.marionette.execute_script("""
                 log('URL: {0}');""".format(self.test_url))
-            self.video = None
             verbose_until(wait, self,
                           expected.element_present(By.TAG_NAME, 'video'))
             videos_found = self.marionette.find_elements(By.CSS_SELECTOR,
@@ -88,7 +92,6 @@ class VideoPuppeteer(object):
             verbose_until(wait, self, lambda v: v.current_time > 0)
             self._start_time = self.current_time
             self._start_wall_time = clock()
-            self._set_duration = set_duration
             self.update_expected_duration()
 
     def update_expected_duration(self):

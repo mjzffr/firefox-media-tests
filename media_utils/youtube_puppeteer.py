@@ -27,12 +27,11 @@ class YouTubePuppeteer(VideoPuppeteer):
         'BUFFERING': 3,
         'CUED': 5
     }
-
     _yt_player_state_name = {v: k for k, v in _yt_player_state.items()}
-
     _time_pattern = re.compile('(?P<minute>\d+):(?P<second>\d+)')
 
     def __init__(self, marionette, url, **kwargs):
+        self.player = None
         super(YouTubePuppeteer,
               self).__init__(marionette, url,
                              video_selector='#movie_player video',
