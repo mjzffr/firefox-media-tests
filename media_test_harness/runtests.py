@@ -3,12 +3,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from manifestparser import read_ini
-from marionette.runner import BrowserMobProxyOptionsMixin
 import os
 import sys
 
-from marionette import BaseMarionetteTestRunner, BaseMarionetteOptions
+from marionette import BaseMarionetteTestRunner, BaseMarionetteArguments
 from marionette.marionette_test import MarionetteTestCase
+from marionette.runner import BrowserMobProxyArguments
 import mozlog
 
 import firefox_media_tests
@@ -63,40 +63,39 @@ DEFAULT_PREFS = {
 }
 
 
-class MediaTestOptions(BaseMarionetteOptions,
-                       BrowserMobProxyOptionsMixin):
+class MediaTestArgumentsBase(object):
+    name = 'Firefox Media Tests'
+    args = [
+        [['--urls'], {
+            'help': 'ini file of urls to make available to all tests',
+            'default': os.path.join(firefox_media_tests.urls, 'default.ini'),
+        }],
+    ]
 
-    def __init__(self, **kwargs):
-        BaseMarionetteOptions.__init__(self, **kwargs)
-        BrowserMobProxyOptionsMixin.__init__(self, **kwargs)
+    def verify_usage_handler(self, args):
+        if args.urls:
+           if not os.path.isfile(args.urls):
+               raise ValueError('--urls must provide a path to an ini file')
+           else:
+               path = os.path.abspath(args.urls)
+               args.video_urls = MediaTestArgumentsBase.get_urls(path)
 
-        self.add_option('--urls',
-                        dest='urls',
-                        action='store',
-                        help='ini file of urls to make available to all tests')
+    def parse_args_handler(self, args):
+        if not args.tests:
+           args.tests = [firefox_media_tests.manifest]
 
-    def parse_args(self, *args, **kwargs):
-        options, tests = BaseMarionetteOptions.parse_args(self, *args,
-                                                          **kwargs)
-
-        if options.urls:
-            if not os.path.isfile(options.urls):
-                self.error('--urls must provide a path to an ini file')
-            else:
-                path = os.path.abspath(options.urls)
-                options.video_urls = MediaTestOptions.get_urls(path)
-        else:
-            default = os.path.join(firefox_media_tests.urls, 'default.ini')
-            options.video_urls = self.get_urls(default)
-
-        tests = tests or [firefox_media_tests.manifest]
-
-        return options, tests
 
     @staticmethod
     def get_urls(manifest):
         with open(manifest, 'r'):
             return [line[0] for line in read_ini(manifest)]
+
+
+class MediaTestArguments(BaseMarionetteArguments):
+    def __init__(self, **kwargs):
+        BaseMarionetteArguments.__init__(self, **kwargs)
+        self.register_argument_container(MediaTestArgumentsBase())
+        self.register_argument_container(BrowserMobProxyArguments())
 
 
 class MediaTestRunner(BaseMarionetteTestRunner):
@@ -128,32 +127,32 @@ class MediaTestRunner(BaseMarionetteTestRunner):
         self.result_callbacks.append(gather_media_debug)
 
 
-def startTestRunner(runner_class, options, tests):
-    if options.pydebugger:
-        MarionetteTestCase.pydebugger = __import__(options.pydebugger)
+def startTestRunner(runner_class, args):
+    if args.pydebugger:
+        MarionetteTestCase.pydebugger = __import__(args.pydebugger)
 
-    runner = runner_class(**vars(options))
+    args = vars(args)
+    tests = args.pop('tests')
+    runner = runner_class(**args)
     runner.run_tests(tests)
     return runner
 
 
-def cli(runner_class=MediaTestRunner, parser_class=MediaTestOptions):
-    parser = parser_class(usage=('%prog [options] test_file_or_dir '
+def cli(runner_class=MediaTestRunner, parser_class=MediaTestArguments):
+    parser = parser_class(usage=('%(prog)s [options] test_file_or_dir '
                                  '<test_file_or_dir> ...'))
     mozlog.commandline.add_logging_group(parser)
-    options, tests = parser.parse_args()
-
-    parser.verify_usage(options, tests)
+    args = parser.parse_args()
+    parser.verify_usage(args)
 
     logger = mozlog.commandline.setup_logging(
-        options.logger_name, options, {'mach': sys.stdout})
+        args.logger_name, args, {'mach': sys.stdout})
 
-    options.logger = logger
+    args.logger = logger
     try:
-        runner = startTestRunner(runner_class, options, tests)
+        runner = startTestRunner(runner_class, args)
         if runner.failed > 0:
             sys.exit(10)
-
     except Exception:
         logger.error('Failure during execution of the playback test.',
                      exc_info=True)

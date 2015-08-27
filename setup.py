@@ -4,12 +4,13 @@
 
 from setuptools import setup, find_packages
 
-PACKAGE_VERSION = '0.2'
+PACKAGE_VERSION = '0.3'
 
 deps = [
-    'marionette-client == 0.18',
-    'marionette-driver == 0.12',
+    'marionette-client == 0.19',
+    'marionette-driver == 0.13',
     'mozlog == 3.0',
+    'manifestparser == 1.1',
 ]
 
 setup(name='firefox-media-tests',
