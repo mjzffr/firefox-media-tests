@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from manifestparser import read_ini
+from marionette.runner import BrowserMobProxyOptionsMixin
 import os
 import sys
 
@@ -62,10 +63,12 @@ DEFAULT_PREFS = {
 }
 
 
-class MediaTestOptions(BaseMarionetteOptions):
+class MediaTestOptions(BaseMarionetteOptions,
+                       BrowserMobProxyOptionsMixin):
 
     def __init__(self, **kwargs):
         BaseMarionetteOptions.__init__(self, **kwargs)
+        BrowserMobProxyOptionsMixin.__init__(self, **kwargs)
 
         self.add_option('--urls',
                         dest='urls',
@@ -73,7 +76,8 @@ class MediaTestOptions(BaseMarionetteOptions):
                         help='ini file of urls to make available to all tests')
 
     def parse_args(self, *args, **kwargs):
-        options, tests = BaseMarionetteOptions.parse_args(self, *args, **kwargs)
+        options, tests = BaseMarionetteOptions.parse_args(self, *args,
+                                                          **kwargs)
 
         if options.urls:
             if not os.path.isfile(options.urls):

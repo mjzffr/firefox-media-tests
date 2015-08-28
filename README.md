@@ -23,17 +23,17 @@ Setup
    $ source foo/bin/activate #or `foo\Scripts\activate` on Windows
    ```
 
-There are two `setup.py` files: one in `$PROJECT_HOME`, another 
+There are two `setup.py` files: one in `$PROJECT_HOME`, another
 in `$PROJECT_HOME/firefox-ui-tests`
 
-* First, install the `firefox-ui-tests` dependency. 
+* First, install the `firefox-ui-tests` dependency.
 
    ```sh
    $ cd firefox-ui-tests
    $ python setup.py develop
    ```
 
-* Install `firefox-media-tests`. 
+* Install `firefox-media-tests`.
 
    ```sh
    $ cd ..
@@ -48,7 +48,7 @@ Running the Tests
 
 _Note:_ see the section about [pf-jenkins](#the-pf-jenkins-branch) for more information about running the tests in an automation environment.
 
-In the examples below, `$FF_PATH` is a path to a Firefox binary (> v37, due to Gecko-Marionette compatibility). 
+In the examples below, `$FF_PATH` is a path to a Firefox binary (> v37, due to Gecko-Marionette compatibility).
 
 This runs all the tests listed in `$PROJECT_HOME/firefox_media_tests/manifest.ini`:
 
@@ -69,7 +69,7 @@ Or you can run the tests that are listed in a manifest file of your choice.
    ```
 
 By default, the urls listed in `firefox_media_tests/urls/default.ini` are used for the tests, but you can also supply your own ini file of urls:
-   
+
    ```sh
    $ firefox-media-tests --binary $FF_PATH --urls some/other/path/my_urls.ini
    ```
@@ -113,22 +113,22 @@ To check whether the above setup is working for you, trigger a (silly) Firefox c
 1. Find the process id (PID) of the Firefox process being used by the tests.
 
   ```sh
-   $ ps x | grep 'Firefox' 
+   $ ps x | grep 'Firefox'
   ```
 
 2. Kill the Firefox process with SIGABRT.
   ```sh
-  # 1234 is an example of a PID 
-   $ kill -6 1234  
+  # 1234 is an example of a PID
+   $ kill -6 1234
   ```
 
 Somewhere in the output produced by `firefox-media-tests`, you should see something like:
 
 ```
-0:12.68 CRASH: MainThread pid:1234. Test:test_basic_playback.py TestVideoPlayback.test_playback_starts. 
-Minidump anaylsed:False. 
+0:12.68 CRASH: MainThread pid:1234. Test:test_basic_playback.py TestVideoPlayback.test_playback_starts.
+Minidump anaylsed:False.
 Signature:[@ XUL + 0x2a65900]
-Crash dump filename: 
+Crash dump filename:
 /var/folders/5k/xmn_fndx0qs2jcpcwhzl86wm0000gn/T/tmpB4Bolj.mozrunner/minidumps/DA3BB025-8302-4F96-8DF3-A97E424C877A.dmp
 Operating system: Mac OS X
                   10.10.2 14C1514
@@ -141,6 +141,22 @@ Crash address: 0x104616900
 ...
 ```
 
+### Setting up for network shaping tests (browsermobproxy)
+
+1. Download the browsermob proxy zip file from http://bmp.lightbody.net/. The most current version as of this writing is browsermob-proxy-2.1.0-beta-2-bin.zip.
+2. Unpack the .zip file.
+3. Verify that you can launch browsermobproxy on your machine by running \<browsermob\>/bin/browsermob-proxy on your machine. I had to do a lot of work to install and use a java that browsermobproxy would like.
+4. Import the certificate into your Firefox profile. Select Preferences->Advanced->Certificates->View Certificates->Import... Navigate to <browsermob>/ssl-support and select cybervilliansCA.cer. Select all of the checkboxes.
+5. Tell marionette where browsermobproxy is and what port to start it on. Add the following command-line parameters to your firefox-media-tests command line:
+
+<pre><code>
+--browsermob-script <browsermob>/bin/browsermob-proxy --browsermob-port 999 --profile <your saved profile>
+</code></pre>
+
+On Windows, use browsermob-proxy.bat.
+
+You can then call browsermob to shape the network. You can find an example in firefox_media_tests/playback/test_playback_limiting_bandwidth.py. Another example can be found at https://dxr.mozilla.org/mozilla-central/source/testing/marionette/client/marionette/tests/unit/test_browsermobproxy.py.
+
 ### A warning about video URLs
 The ini files in `firefox_media_tests/urls` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. I do not intend to ever verify or filter these URLs.
 
@@ -149,13 +165,13 @@ Writing a test
 Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firefox_media_tests`. Add it to the appropriate `manifest.ini` file(s) as well. Look in `media_utils` for useful video-playback functions.
 
 * [Marionette docs][marionette-docs]
-  - [Marionette Command Line Options](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options) 
+  - [Marionette Command Line Options](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options)
 * [Firefox Puppeteer docs][ff-puppeteer-docs]
 
 The `pf-jenkins` Branch
 -----------------------
 
-This branch contains additional code to automate test runs in a Jenkins instance maintained as part of the [Platform Quality](https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality) project at Mozilla. 
+This branch contains additional code to automate test runs in a Jenkins instance maintained as part of the [Platform Quality](https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality) project at Mozilla.
 
 The main point of interest is `run_media_tests.py`, which is a [mozharness](https://wiki.mozilla.org/ReleaseEngineering/Mozharness) script that runs the specified tests and reports results to [Treeherder](https://wiki.mozilla.org/Auto-tools/Projects/Treeherder). The script also sets up a virtual environment for the tests, controls logging, sets up a Firefox binary to test, sets up crash-reporter symbols, etc. Look for `all_actions` in the source for a full summary.
 
@@ -175,16 +191,16 @@ Keep in mind that, by default, `run_media_tests.py` will create and activate a v
 
 _(Optional!)_ Reporting results to Treeherder requires credentials for the project/repo you want to submit to (e.g. mozilla-central) as well as credentials for whereever you will upload logs (an S3 bucket). Look at `config/treeherder_submission.py` to learn more.
 
-The easiest way to turn off all the Treeherder stuff is to just add the `--no-treeherding` option. 
+The easiest way to turn off all the Treeherder stuff is to just add the `--no-treeherding` option.
 
 ### Examples
-* This runs just the tests in `test_example.py` using a Firefox installer that you've previously downloaded, printing debug-level logs and not submitting anything to Treeherder. 
+* This runs just the tests in `test_example.py` using a Firefox installer that you've previously downloaded, printing debug-level logs and not submitting anything to Treeherder.
 
   ```sh
 python run_media_tests.py --installer-path=temp/firefox-41.0a1.en-US.mac64.dmg --tests=firefox_media_tests/playback/test_example.py --no-download-and-extract --no-treeherding --log-level=debug
   ```
- 
-* This does the same as above, except it runs all default tests and it _does_ submit to Treeherder. Custom job name/symbol to display on Treeherder are also specified. 
+
+* This does the same as above, except it runs all default tests and it _does_ submit to Treeherder. Custom job name/symbol to display on Treeherder are also specified.
   ```sh
   python run_media_tests.py --installer-path=temp/firefox-41.0a1.en-US.mac64.dmg --no-download-and-extract -c config/treeherder_submission.py --log-level=debug --job-symbol=t --job-name='Testing 123'
   ```
@@ -201,5 +217,5 @@ This software is licensed under the [Mozilla Public License v. 2.0](http://mozil
 [marionette-python-tests]: https://developer.mozilla.org/en-US/docs/Mozilla/QA/Marionette/Marionette_Python_Tests
 [firefox_ui_tests]: https://github.com/mozilla/firefox-ui-tests
 [ff-puppeteer-docs]: http://firefox-puppeteer.readthedocs.org/en/latest/
-[marionette-docs]: http://marionette-client.readthedocs.org/en/latest/reference.html 
+[marionette-docs]: http://marionette-client.readthedocs.org/en/latest/reference.html
 [ff-nightly]:https://nightly.mozilla.org/
