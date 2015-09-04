@@ -3,6 +3,12 @@ import os
 TREEHERDER_CONFIG = os.environ.get('TREEHERDER_CONFIG') or 'credentials.ignore'
 
 config = {
+
+    "find_links": [
+        "http://pypi.pub.build.mozilla.org/pub",
+    ],
+    "pip_index": False,
+
     "treeherder_url": "https://treeherder.allizom.org",
 
     # Paths are relative to 'base_work_dir'
