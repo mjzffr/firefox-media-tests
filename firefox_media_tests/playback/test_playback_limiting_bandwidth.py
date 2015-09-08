@@ -30,7 +30,7 @@ class TestPlaybackLimitingBandwidth(MediaTestCase,
         with self.marionette.using_context('content'):
             for url in self.video_urls:
                 video = VideoPuppeteer(self.marionette, url,
-                                       stall_wait_time=10,
+                                       stall_wait_time=60,
                                        set_duration=60)
                 self.run_playback(video)
 
