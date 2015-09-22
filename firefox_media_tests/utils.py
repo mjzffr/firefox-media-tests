@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from sys import exc_info
 import datetime
 import time
 
@@ -31,8 +30,9 @@ def verbose_until(wait, target, condition):
     try:
         return wait.until(condition)
     except TimeoutException as e:
-        message = '\n'.join([e.msg, str(target)])
-        raise TimeoutException(message=message, cause=exc_info())
+        message = '\n'.join([e.msg + '; condition: ' + condition.__name__,
+                             str(target)])
+        raise TimeoutException(message=message)
 
 
 def save_memory_report(marionette):
