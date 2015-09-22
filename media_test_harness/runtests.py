@@ -118,6 +118,10 @@ class MediaTestRunner(BaseMarionetteTestRunner):
                         if debug_lines:
                             name = 'mozMediaSourceObject.mozDebugReaderData'
                             rv[name] = '\n'.join(debug_lines)
+                        else:
+                            logger = mozlog.get_default_logger()
+                            logger.info('No data available about '
+                                        'mozMediaSourceObject')
                 except:
                     logger = mozlog.get_default_logger()
                     logger.warning('Failed to gather test failure media debug',
