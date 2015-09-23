@@ -379,17 +379,17 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
                                ],
               config={'download_symbols': True, },
         )
+        dirs = self.query_abs_dirs()
+        requirements_file = os.path.join(dirs['base_work_dir'], 'requirements.txt')
+        if os.path.isfile(requirements_file):
+            self.register_virtualenv_module(requirements=[requirements_file])
         # cwd is $workspace/build
         # '..' refers to parent of setup.py for firefox-media-tests
         self.register_virtualenv_module(name='firefox-ui-tests',
                                         url=os.path.join('..',
-                                                         'firefox-ui-tests'),
-                                        method='pip',
-                                        editable='true')
+                                                         'firefox-ui-tests'))
         self.register_virtualenv_module(name='firefox-media-tests',
-                                        url='..',
-                                        method='pip',
-                                        editable='true')
+                                        url='..')
         c = self.config
         self.installer_url = c.get('installer_url')
         self.symbols_url = c.get('symbols_url')
