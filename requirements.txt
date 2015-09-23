@@ -1,11 +1,5 @@
-blessings==1.6
-browsermob-proxy==0.7.1
--e git+git@github.com:mjzffr/firefox-media-tests.git@69b679297829e870e8b814a06bc8a615e5a220ab#egg=firefox_media_tests-master
--e git+https://github.com/mozilla/firefox-ui-tests.git@7bfdb3e50a92261f177faf95bb6cb2e727229e51#egg=firefox_ui_tests-origin_HEAD
+browsermob-proxy==0.6.0
 manifestparser==1.1
-marionette-client==0.19
-marionette-driver==0.13
-marionette-transport==0.7
 mozcrash==0.15
 mozdevice==0.46
 mozfile==1.2
@@ -19,4 +13,3 @@ mozprofile==0.27
 mozrunner==6.9
 moztest==0.7
 mozversion==1.4
-requests==2.7.0

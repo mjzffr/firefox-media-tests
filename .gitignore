@@ -2,10 +2,12 @@
 __pycache__/
 *.py[cod]
 *.egg-info
+dist/
 
 #logs
 gecko.log
 logs/
+*.log
 
 #other
 *.ignore
@@ -16,6 +18,7 @@ screenshots/
 
 #pyenv
 .python-version
+venv/
 
 #pycharm
 .idea/
