@@ -8,7 +8,6 @@
     Assumptions:
     - This script is run from directory ("Jenkins workspace") that contains
       clone of firefox-media-tests repo, including submodule(s).
-    - (Is the Jenkins workspace clobbered?)
 
     Requires:
     - virtualenv, pip
@@ -355,6 +354,16 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
           "action": "store_true",
           "default": False,
           "help": "Enable e10s when running marionette tests."}],
+        [["--browsermob-script"],
+         {"dest": "browsermob_script",
+          "action": "store",
+          "default": None,
+          "help": "path to the browsermob-proxy shell script or batch file"}],
+        [["--browsermob-port"],
+         {"dest": "browsermob_port",
+          "action": "store",
+          "default": None,
+          "help": "port to run the browsermob proxy on"}],
     ] + (copy.deepcopy(testing_config_options) +
          copy.deepcopy(treeherding_config_options))
 
@@ -400,6 +409,8 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         self.tests = c.get('tests')
         self.media_logs = set(['gecko.log'])
         self.e10s = c.get('e10s')
+        self.browsermob_script = c.get('browsermob_script')
+        self.browsermob_port = c.get('browsermob_port')
 
     # Allow config to set log_date_format
     def new_log_obj(self, default_log_level="info"):
@@ -494,6 +505,10 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             cmd += ['--urls', self.media_urls]
         if self.profile:
             cmd += ['--profile', self.profile]
+        if self.browsermob_script:
+            cmd += ['--browsermob-script', self.browsermob_script]
+        if self.browsermob_port:
+            cmd += ['--browsermob-port', self.browsermob_port]
         if self.tests:
             cmd.append(self.tests)
         if self.e10s:
