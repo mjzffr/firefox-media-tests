@@ -4,6 +4,7 @@
 
 import os
 
+from marionette import BrowserMobProxyTestCaseMixin
 from marionette_driver import Wait
 from marionette_driver.errors import TimeoutException
 from marionette.marionette_test import SkipTest
@@ -66,6 +67,33 @@ class MediaTestCase(FirefoxTestCase):
         gets recognized a skip in marionette.marionette_test.CommonTestCase.run
         """
         raise SkipTest(reason)
+
+
+class NetworkBandwidthTestCase(MediaTestCase):
+
+    def __init__(self, *args, **kwargs):
+        MediaTestCase.__init__(self, *args, **kwargs)
+        BrowserMobProxyTestCaseMixin.__init__(self, *args, **kwargs)
+        self.proxy = None
+
+    def setUp(self):
+        MediaTestCase.setUp(self)
+        BrowserMobProxyTestCaseMixin.setUp(self)
+        self.proxy = self.create_browsermob_proxy()
+
+    def tearDown(self):
+        MediaTestCase.tearDown(self)
+        BrowserMobProxyTestCaseMixin.tearDown(self)
+        self.proxy = None
+
+
+    def run_videos(self):
+        with self.marionette.using_context('content'):
+            for url in self.video_urls:
+                video = VP(self.marionette, url,
+                                       stall_wait_time=60,
+                                       set_duration=60)
+                self.run_playback(video)
 
 
 class VideoPlaybackTestsMixin(object):

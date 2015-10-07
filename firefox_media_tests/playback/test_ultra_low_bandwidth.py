@@ -8,17 +8,9 @@ from media_utils.video_puppeteer import VideoPuppeteer
 from media_test_harness.testcase import NetworkBandwidthTestCase
 
 
-class TestPlaybackLimitingBandwidth(NetworkBandwidthTestCase,
+class TestUltraLowBandwidth(NetworkBandwidthTestCase,
                                     BrowserMobProxyTestCaseMixin):
 
-    def test_playback_limiting_bandwidth_250(self):
-        self.proxy.limits({'downstream_kbps': 250})
-        self.run_videos()
-
-    def test_playback_limiting_bandwidth_500(self):
-        self.proxy.limits({'downstream_kbps': 500})
-        self.run_videos()
-
-    def test_playback_limiting_bandwidth_1000(self):
-        self.proxy.limits({'downstream_kbps': 1000})
+    def test_playback_limiting_bandwidth_160(self):
+        self.proxy.limits({'downstream_kbps': 160})
         self.run_videos()
