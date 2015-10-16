@@ -4,6 +4,7 @@
 
 import datetime
 import time
+import types
 
 from marionette_driver.errors import TimeoutException
 
@@ -30,7 +31,11 @@ def verbose_until(wait, target, condition):
     try:
         return wait.until(condition)
     except TimeoutException as e:
-        message = '\n'.join([e.msg + '; condition: ' + condition.__name__,
+        if isinstance(condition, types.FunctionType):
+            name = condition.__name__
+        else:
+            name = str(condition)
+        message = '\n'.join([e.msg + '; condition: ' + name,
                              str(target)])
         raise TimeoutException(message=message)
 
