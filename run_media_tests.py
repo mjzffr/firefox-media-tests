@@ -141,7 +141,7 @@ class TreeherdingMixin(object):
             return
         self.register_virtualenv_module('boto', method='pip',
                                         optional=True)
-        self.register_virtualenv_module('treeherder-client==1.7',
+        self.register_virtualenv_module('treeherder-client==1.8',
                                         method='pip', optional=True)
         # For populating self.job with build/machine data
         self.register_virtualenv_module('mozinfo',

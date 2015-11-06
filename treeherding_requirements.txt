@@ -1,4 +1,7 @@
 mozinfo == 0.8
-treeherder-client == 1.7.0
+mohawk == 0.3.0
+requests == 2.8.1
+requests_hawk == 0.2.1
+treeherder-client == 1.8
 boto == 2.38.0
 mozversion == 1.4
