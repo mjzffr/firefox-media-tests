@@ -9,7 +9,7 @@ from marionette_driver import Wait
 from marionette_driver.errors import TimeoutException
 from marionette.marionette_test import SkipTest
 
-from firefox_ui_harness import FirefoxTestCase
+from firefox_puppeteer.testcases import FirefoxTestCase
 from firefox_media_tests.utils import (timestamp_now, verbose_until)
 from media_utils.video_puppeteer import (playback_done, playback_started,
                                          VideoException, VideoPuppeteer as VP)
@@ -22,8 +22,12 @@ class MediaTestCase(FirefoxTestCase):
         FirefoxTestCase.__init__(self, *args, **kwargs)
 
     def save_screenshot(self):
-        screenshot_dir = 'screenshots'
-        filename = self.id().replace(' ', '-') + str(timestamp_now()) + '.png'
+        screenshot_dir = os.path.join(self.marionette.instance.workspace or '',
+                                      'screenshots')
+        filename = ''.join([self.id().replace(' ', '-'),
+                            '_',
+                            str(timestamp_now()),
+                            '.png'])
         path = os.path.join(screenshot_dir, filename)
         if not os.path.exists(screenshot_dir):
             os.makedirs(screenshot_dir)

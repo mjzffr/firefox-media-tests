@@ -7,60 +7,13 @@ import os
 import sys
 
 from marionette import BaseMarionetteTestRunner, BaseMarionetteArguments
-from marionette.marionette_test import MarionetteTestCase
 from marionette.runner import BrowserMobProxyArguments
+from marionette.runtests import MarionetteHarness, cli as mn_cli
 import mozlog
 
 import firefox_media_tests
 from testcase import MediaTestCase
 from media_utils.video_puppeteer import debug_script
-
-DEFAULT_PREFS = {
-    'app.update.auto': False,
-    'app.update.enabled': False,
-    'browser.dom.window.dump.enabled': True,
-    # Bug 1145668 - Has to be reverted to about:blank once Marionette
-    # can correctly handle error pages
-    'browser.newtab.url': 'about:newtab',
-    'browser.newtabpage.enabled': False,
-    'browser.reader.detectedFirstArticle': True,
-    'browser.safebrowsing.enabled': False,
-    'browser.safebrowsing.malware.enabled': False,
-    'browser.search.update': False,
-    'browser.sessionstore.resume_from_crash': False,
-    'browser.shell.checkDefaultBrowser': False,
-    'browser.startup.page': 0,
-    'browser.tabs.animate': False,
-    'browser.tabs.warnOnClose': False,
-    'browser.tabs.warnOnOpen': False,
-    'browser.uitour.enabled': False,
-    'browser.warnOnQuit': False,
-    'datareporting.healthreport.service.enabled': False,
-    'datareporting.healthreport.uploadEnabled': False,
-    'datareporting.healthreport.documentServerURI': "http://%(server)s/healthreport/",
-    'datareporting.healthreport.about.reportUrl': "http://%(server)s/abouthealthreport/",
-    'datareporting.policy.dataSubmissionEnabled': False,
-    'datareporting.policy.dataSubmissionPolicyAccepted': False,
-    'dom.ipc.reportProcessHangs': False,
-    'dom.report_all_js_exceptions': True,
-    'extensions.enabledScopes': 5,
-    'extensions.autoDisableScopes': 10,
-    'extensions.getAddons.cache.enabled': False,
-    'extensions.installDistroAddons': False,
-    'extensions.logging.enabled': True,
-    'extensions.showMismatchUI': False,
-    'extensions.update.enabled': False,
-    'extensions.update.notifyUser': False,
-    'focusmanager.testmode': True,
-    'geo.provider.testing': True,
-    'javascript.options.showInConsole': True,
-    'marionette.logging': False,
-    'security.notification_enable_delay': 0,
-    'signon.rememberSignons': False,
-    'startup.homepage_welcome_url': 'about:blank',
-    'toolkit.startup.max_resumed_crashes': -1,
-    'toolkit.telemetry.enabled': False,
-}
 
 
 class MediaTestArgumentsBase(object):
@@ -103,7 +56,8 @@ class MediaTestRunner(BaseMarionetteTestRunner):
         BaseMarionetteTestRunner.__init__(self, **kwargs)
         if not self.server_root:
             self.server_root = firefox_media_tests.resources
-        self.prefs.update(DEFAULT_PREFS)
+        # pick up prefs from marionette_driver.geckoinstance.DesktopInstance
+        self.app = 'fxdesktop'
         self.test_handlers = [MediaTestCase]
 
         # Used in HTML report (--log-html)
@@ -131,37 +85,18 @@ class MediaTestRunner(BaseMarionetteTestRunner):
         self.result_callbacks.append(gather_media_debug)
 
 
-def startTestRunner(runner_class, args):
-    if args.pydebugger:
-        MarionetteTestCase.pydebugger = __import__(args.pydebugger)
+class FirefoxMediaHarness(MarionetteHarness):
+    def __init__(self,
+                 runner_class=MediaTestRunner,
+                 parser_class=MediaTestArguments):
+        MarionetteHarness.__init__(self, runner_class, parser_class)
 
-    args = vars(args)
-    tests = args.pop('tests')
-    runner = runner_class(**args)
-    runner.run_tests(tests)
-    return runner
+    def parse_args(self, *args, **kwargs):
+        return MarionetteHarness.parse_args(self, {'mach': sys.stdout})
 
 
-def cli(runner_class=MediaTestRunner, parser_class=MediaTestArguments):
-    parser = parser_class(usage=('%(prog)s [options] test_file_or_dir '
-                                 '<test_file_or_dir> ...'))
-    mozlog.commandline.add_logging_group(parser)
-    args = parser.parse_args()
-    parser.verify_usage(args)
-
-    logger = mozlog.commandline.setup_logging(
-        args.logger_name, args, {'mach': sys.stdout})
-
-    args.logger = logger
-    try:
-        runner = startTestRunner(runner_class, args)
-        if runner.failed > 0:
-            sys.exit(10)
-    except Exception:
-        logger.error('Failure during execution of the playback test.',
-                     exc_info=True)
-        sys.exit(1)
-
+def cli():
+    mn_cli(MediaTestRunner, MediaTestArguments, FirefoxMediaHarness)
 
 if __name__ == '__main__':
-    sys.exit(cli())
+    cli()

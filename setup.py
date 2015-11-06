@@ -4,11 +4,11 @@
 
 from setuptools import setup, find_packages
 
-PACKAGE_VERSION = '0.3'
+PACKAGE_VERSION = '0.4'
 
 deps = [
-    'marionette-client == 0.19',
-    'marionette-driver == 0.13',
+    'marionette-client == 2.0.0',
+    'marionette-driver == 1.1.1',
     'mozlog == 3.0',
     'manifestparser == 1.1',
 ]

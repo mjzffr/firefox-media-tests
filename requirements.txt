@@ -1,6 +1,6 @@
 browsermob-proxy==0.6.0
 manifestparser==1.1
-mozcrash==0.15
+mozcrash==0.16
 mozdevice==0.46
 mozfile==1.2
 mozhttpd==0.7

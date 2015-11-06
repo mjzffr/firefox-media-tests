@@ -1,3 +1,4 @@
 [submodule "firefox-ui-tests"]
 	path = firefox-ui-tests
-	url = https://github.com/mozilla/firefox-ui-tests.git
+        url = https://github.com/mozilla/firefox-ui-tests.git
+        branch = mozilla-central
