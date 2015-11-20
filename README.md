@@ -30,10 +30,10 @@ in `$PROJECT_HOME/firefox-ui-tests`
 
    ```sh
    $ cd firefox-ui-tests
-   $ python setup.py develop
+   $ python setup.py install
    ```
 
-* Install `firefox-media-tests`.
+* Install `firefox-media-tests` in development mode.
 
    ```sh
    $ cd ..
