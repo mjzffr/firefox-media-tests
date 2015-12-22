@@ -234,7 +234,7 @@ class YouTubePuppeteer(VideoPuppeteer):
         wait = Wait(self, timeout=ad_timeout, interval=1)
         try:
             self.marionette.log('process_ad: waiting %s s for ad' % ad_timeout)
-            verbose_until(wait, self, lambda y: y.ad_ended)
+            verbose_until(wait, self, lambda y: y.ad_ended, "Check if ad ended")
         except TimeoutException:
             self.marionette.log('Waiting for ad to end timed out',
                                 level='WARNING')

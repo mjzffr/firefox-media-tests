@@ -13,7 +13,7 @@ def timestamp_now():
     return int(time.mktime(datetime.datetime.now().timetuple()))
 
 
-def verbose_until(wait, target, condition):
+def verbose_until(wait, target, condition, message=""):
     """
     Performs a `wait`.until(condition)` and adds information about the state of
     `target` to any resulting `TimeoutException`.
@@ -24,20 +24,20 @@ def verbose_until(wait, target, condition):
         This is usually the input value provided to the `condition` used by
         `wait`. Ideally, `target` should implement `__str__`
     :param condition: callable function used by `wait.until()`
+    :param message: optional message to log when exception occurs
 
     :return: the result of `wait.until(condition)`
-    :raises: marionette.errors.TimeoutException
     """
-    try:
-        return wait.until(condition)
-    except TimeoutException as e:
-        if isinstance(condition, types.FunctionType):
-            name = condition.__name__
-        else:
-            name = str(condition)
-        message = '\n'.join([e.msg + '; condition: ' + name,
+    if isinstance(condition, types.FunctionType):
+        name = condition.__name__
+    else:
+        name = str(condition)
+    err_message = '\n'.join([message,
+                             'condition: ' + name,
                              str(target)])
-        raise TimeoutException(message=message)
+
+    return wait.until(condition, message=err_message)
+
 
 
 def save_memory_report(marionette):

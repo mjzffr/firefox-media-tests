@@ -89,7 +89,8 @@ class VideoPuppeteer(object):
             self.marionette.execute_script("log('video element obtained');")
             # To get an accurate expected_duration, playback must have started
             wait = Wait(self, timeout=self.timeout)
-            verbose_until(wait, self, lambda v: v.current_time > 0)
+            verbose_until(wait, self, lambda v: v.current_time > 0,
+                          "Check if video current_time > 0")
             self._start_time = self.current_time
             self._start_wall_time = clock()
             self.update_expected_duration()
