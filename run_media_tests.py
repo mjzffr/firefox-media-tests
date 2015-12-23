@@ -7,7 +7,7 @@
 """run_media_tests.py
     Assumptions:
     - This script is run from directory ("Jenkins workspace") that contains
-      clone of firefox-media-tests repo, including submodule(s).
+      clone of firefox-media-tests repo.
 
     Requires:
     - virtualenv, pip
@@ -394,9 +394,6 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
             self.register_virtualenv_module(requirements=[requirements_file])
         # cwd is $workspace/build
         # '..' refers to parent of setup.py for firefox-media-tests
-        self.register_virtualenv_module(name='firefox-ui-tests',
-                                        url=os.path.join('..',
-                                                         'firefox-ui-tests'))
         self.register_virtualenv_module(name='firefox-media-tests',
                                         url='..')
         c = self.config
