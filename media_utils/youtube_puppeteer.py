@@ -125,9 +125,12 @@ class YouTubePuppeteer(VideoPuppeteer):
 
     @property
     def movie_title(self):
-        return self.execute_yt_script('return arguments[1].'
-                                      'wrappedJSObject.'
-                                      'getVideoData()["title"];')
+        title = self.execute_yt_script('return arguments[1].'
+                                       'wrappedJSObject.'
+                                       'getVideoData()["title"];')
+        # title may include non-ascii characters; replace them to avoid
+        # UnicodeEncodeError in string formatting for log messages
+        return title.encode('ascii', 'replace')
 
     @property
     def player_url(self):
