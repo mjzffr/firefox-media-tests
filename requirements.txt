@@ -13,3 +13,4 @@ mozprofile==0.27
 mozrunner==6.9
 moztest==0.7
 mozversion==1.4
+firefox_puppeteer==3.0.0

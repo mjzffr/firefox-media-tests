@@ -7,36 +7,18 @@ firefox-media-tests
 Setup
 -----
 
-* Get the source. This includes a submodule: `firefox-ui-tests`.
+The instructions below assume you have a copy of the project in `some/path/firefox-media-tests` and they refer to this path as `$PROJECT_HOME`.
 
-   ```sh
-   $ git clone --recursive https://github.com/mjzffr/firefox-media-tests.git
-   $ cd firefox-media-tests
-   ```
-
-   The above step clones the project into `some/path/firefox-media-tests` and the instructions below refer to this path as `$PROJECT_HOME`.
-
-* Create a virtualenv called `foo`. (Optional, but highly recommended.)
+* Create a virtualenv called `foo`. 
 
    ```sh
    $ virtualenv foo
    $ source foo/bin/activate #or `foo\Scripts\activate` on Windows
    ```
 
-There are two `setup.py` files: one in `$PROJECT_HOME`, another
-in `$PROJECT_HOME/firefox-ui-tests`
-
-* First, install the `firefox-ui-tests` dependency.
+* Install `firefox-media-tests` in development mode. (To get an environment that is closer to what is actually used in Mozilla's automation jobs, run `pip install -r requirements.txt` first.)
 
    ```sh
-   $ cd firefox-ui-tests
-   $ python setup.py install
-   ```
-
-* Install `firefox-media-tests` in development mode.
-
-   ```sh
-   $ cd ..
    $ python setup.py develop
    ```
 
@@ -48,7 +30,7 @@ Running the Tests
 
 _Note:_ see the section about [pf-jenkins](#the-pf-jenkins-branch) for more information about running the tests in an automation environment.
 
-In the examples below, `$FF_PATH` is a path to a Firefox binary (> v37, due to Gecko-Marionette compatibility).
+In the examples below, `$FF_PATH` is a path to a recent Firefox binary.
 
 This runs all the tests listed in `$PROJECT_HOME/firefox_media_tests/manifest.ini`:
 
@@ -158,7 +140,7 @@ On Windows, use browsermob-proxy.bat.
 You can then call browsermob to shape the network. You can find an example in firefox_media_tests/playback/test_playback_limiting_bandwidth.py. Another example can be found at https://dxr.mozilla.org/mozilla-central/source/testing/marionette/client/marionette/tests/unit/test_browsermobproxy.py.
 
 ### A warning about video URLs
-The ini files in `firefox_media_tests/urls` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. I do not intend to ever verify or filter these URLs.
+The ini files in `firefox_media_tests/urls` may contain URLs pulled from Firefox crash or bug data. Automated tests don't care about video content, but you might: visit these at your own risk and be aware that they may be NSFW. We do not intend to ever moderate or filter these URLs.
 
 Writing a test
 --------------
@@ -168,8 +150,10 @@ Write your test in a new or existing `test_*.py` file under `$PROJECT_HOME/firef
   - [Marionette Command Line Options](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options)
 * [Firefox Puppeteer docs][ff-puppeteer-docs]
 
-The `pf-jenkins` Branch
------------------------
+The `pf-jenkins` Branch - soon-to-be deprecated
+-----------------------------------------------
+
+_Note that firefox-media-tests is being moved into mozilla-central some time in December 2015 or January 2016, after which the pf-jenkins branch will be deprecated._
 
 This branch contains additional code to automate test runs in a Jenkins instance maintained as part of the [Platform Quality](https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality) project at Mozilla.
 

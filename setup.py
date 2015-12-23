@@ -11,6 +11,7 @@ deps = [
     'marionette-driver == 1.1.1',
     'mozlog == 3.0',
     'manifestparser == 1.1',
+    'firefox_puppeteer == 3.0.0',
 ]
 
 setup(name='firefox-media-tests',
