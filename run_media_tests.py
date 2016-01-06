@@ -139,13 +139,11 @@ class TreeherdingMixin(object):
         self.job_result_parser = None  # JobResultParser
         if self.config['treeherding_off']:
             return
-        self.register_virtualenv_module('boto', method='pip',
-                                        optional=True)
-        self.register_virtualenv_module('treeherder-client==1.8',
-                                        method='pip', optional=True)
-        # For populating self.job with build/machine data
-        self.register_virtualenv_module('mozinfo',
-                                        method='pip', optional=True)
+        dirs = self.query_abs_dirs()
+        th_requirements = os.path.join(dirs['base_work_dir'],
+                                       'treeherding_requirements.txt')
+        if os.path.isfile(th_requirements):
+            self.register_virtualenv_module(requirements=[th_requirements])
         self.register_virtualenv_module('mozversion',
                                         method='pip', optional=True)
 
@@ -392,10 +390,6 @@ class FirefoxMediaTest(TreeherdingMixin, TestingMixin, BaseScript):
         requirements_file = os.path.join(dirs['base_work_dir'], 'requirements.txt')
         if os.path.isfile(requirements_file):
             self.register_virtualenv_module(requirements=[requirements_file])
-        # cwd is $workspace/build
-        # '..' refers to parent of setup.py for firefox-media-tests
-        self.register_virtualenv_module(name='firefox-media-tests',
-                                        url='..')
         c = self.config
         self.installer_url = c.get('installer_url')
         self.symbols_url = c.get('symbols_url')
