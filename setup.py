@@ -4,12 +4,12 @@
 
 from setuptools import setup, find_packages
 
-PACKAGE_VERSION = '0.4'
+PACKAGE_VERSION = '0.5'
 
 deps = [
-    'marionette-client == 2.0.0',
-    'marionette-driver == 1.1.1',
-    'mozlog == 3.0',
+    'marionette-client == 2.1.0',
+    'marionette-driver == 1.2.0',
+    'mozlog == 3.1',
     'manifestparser == 1.1',
     'firefox-puppeteer >= 3.1.0, <4.0.0',
 ]
