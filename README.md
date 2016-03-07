@@ -1,6 +1,7 @@
-firefox-media-tests
-===================
-[![Code Health](https://landscape.io/github/mjzffr/firefox-media-tests/master/landscape.png)](https://landscape.io/github/mjzffr/firefox-media-tests/master)
+firefox-media-tests (deprecated repo)
+=====================================
+
+All code is now on mozilla-central. Details here: https://wiki.mozilla.org/Auto-tools/Projects/Platform_Quality/External_Media_Tests
 
 [Marionette Python tests][marionette-python-tests] for media playback in Mozilla Firefox. MediaTestCase uses [Firefox Puppeteer][ff-puppeteer-docs] library.
 
